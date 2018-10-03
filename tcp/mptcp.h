@@ -41,7 +41,7 @@
 
 struct subflow
 {
-  subflow ():used (false), is_xpass(false) addr_ (0), port_ (0), daddr_ (-1), dport_ (-1),
+  subflow ():used (false), is_xpass(false), addr_ (0), port_ (0), daddr_ (-1), dport_ (-1),
     link_ (NULL), target_ (NULL), tcp_ (NULL), scwnd_ (0)
   {
   };
