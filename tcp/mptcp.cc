@@ -139,6 +139,17 @@ MptcpAgent::command (int argc, const char *const *argv)
       sub_num_++;
       return (TCL_OK);
     }
+    else if  (strcmp (argv[1], "attach-xpass") == 0) {
+      int id = get_subnum ();
+      subflows_[id].xpass_ = (XPassAgent *) TclObject::lookup (argv[2]);
+      subflows_[id].used = true;
+      is_xpass=true;
+      //subflows_[id].addr_ = subflows_[id].tcp_->addr ();
+      //subflows_[id].port_ = subflows_[id].tcp_->port ();
+      //subflows_[id].tcp_->mptcp_set_core (this);
+      sub_num_++;
+      return (TCL_OK);
+    }
     else if (strcmp (argv[1], "set-multihome-core") == 0) {
       core_ = (Classifier *) TclObject::lookup (argv[2]);
       if (core_ == NULL) {

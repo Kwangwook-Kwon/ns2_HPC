@@ -34,16 +34,19 @@
 #include "node.h"
 #include "packet.h"
 #include <vector>
+#include "xpass.h"
+
 
 #define MAX_SUBFLOW 100
 
 struct subflow
 {
-  subflow ():used (false), addr_ (0), port_ (0), daddr_ (-1), dport_ (-1),
+  subflow ():used (false), is_xpass(false) addr_ (0), port_ (0), daddr_ (-1), dport_ (-1),
     link_ (NULL), target_ (NULL), tcp_ (NULL), scwnd_ (0)
   {
   };
   bool used;
+  bool is_xpass;
   int addr_;
   int port_;
   int daddr_;
@@ -51,6 +54,7 @@ struct subflow
   NsObject *link_;
   NsObject *target_;
   MpFullTcpAgent *tcp_;
+  XPassAgent *xpass_;
   int dstid_;
   double scwnd_;
 };
