@@ -143,7 +143,7 @@ MptcpAgent::command (int argc, const char *const *argv)
       int id = get_subnum ();
       subflows_[id].xpass_ = (XPassAgent *) TclObject::lookup (argv[2]);
       subflows_[id].used = true;
-      is_xpass=true;
+      subflows_[id].is_xpass=true;
       //subflows_[id].addr_ = subflows_[id].tcp_->addr ();
       //subflows_[id].port_ = subflows_[id].tcp_->port ();
       //subflows_[id].tcp_->mptcp_set_core (this);
