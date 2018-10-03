@@ -145,10 +145,9 @@ MptcpAgent::command (int argc, const char *const *argv)
       subflows_[id].used = true;
       subflows_[id].is_xpass=true;
       subflows_[id].addr_ = subflows_[id].xpass_->addr ();
-      printf("test1 : %d\n", subflows_[id].addr_);
       subflows_[id].port_ = subflows_[id].xpass_->port ();
-      printf("test2 : %d\n", subflows_[id].port_);
       subflows_[id].tcp_->mptcp_set_core (this);
+      printf("test3\n")
       sub_num_++;
       return (TCL_OK);
     }
