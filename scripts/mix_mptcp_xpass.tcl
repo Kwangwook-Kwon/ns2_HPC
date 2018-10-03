@@ -84,8 +84,8 @@ set agent0 [new Agent/XPass]
 set agent1 [new Agent/XPass]
 $ns attach-agent $node0_0 $agent0
 $ns attach-agent $node0_1 $agent1
-$mptcp attach-tcp $agent0
-$mptcp attach-tcp $agent1
+$mptcp attach-xpass $agent0
+$mptcp attach-xpass $agent1
 $ns multihome-attach-agent $node0 $mptcp
 
 
@@ -104,8 +104,8 @@ $ns attach-agent $node1_0 $agent2
 set agent3 [new Agent/XPass]
 $ns attach-agent $node1_1 $agent3
 
-$mptcpsink attach-tcp $agent2
-$mptcpsink attach-tcp $agent3
+$mptcpsink attach-xpass $agent2
+$mptcpsink attach-xpass $agent3
 
 $ns multihome-attach-agent $node1 $mptcpsink
 $ns multihome-connect $mptcp $mptcpsink
