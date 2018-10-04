@@ -61,11 +61,13 @@ $ns simplex-link $node0_0 $r1      10Mb 5ms DropTail
 $ns simplex-link $r1	  $node0_0  10Mb 5ms XPassDropTail
 $ns simplex-link $node1_0 $r1      10Mb 5ms DropTail
 $ns simplex-link $r1	  $node1_0 10Mb 5ms XPassDropTail
+$ns queue-limit $r1 30
 
 $ns simplex-link $node0_1 $r2      10Mb 5ms DropTail
 $ns simplex-link $r2      $node0_1   10Mb 5ms XPassDropTail
 $ns simplex-link $node1_1 $r2      10Mb 5ms DropTail
 $ns simplex-link $r2      $node1_1 10Mb 5ms XPassDropTail
+$ns queue-limit $r2 30
 
 
 #Agent/XPass set max_credit_rate_ $creditRate
