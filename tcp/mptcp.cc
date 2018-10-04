@@ -335,7 +335,7 @@ MptcpAgent::send_control ()
   if (total_bytes_ > 0 && infinite_send_) {
     /* one round */
     bool slow_start = false;
-    case(is_xpass){
+    switch(is_xpass){
       {
         case false:
           for (int i = 0; i < sub_num_; i++) {
