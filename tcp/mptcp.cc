@@ -113,9 +113,11 @@ MptcpAgent::command (int argc, const char *const *argv)
 
           /* if this destination is already used by other subflow, don't use it */
           if (used_dst[j]) continue;
-
+printf "test-reset 11111"
           if (check_routable (i, dsts_[j].addr_, dsts_[j].port_)) {
+            printf "test-reset 22222"
             subflows_[i].daddr_ = dsts_[j].addr_;
+            printf "test-reset 33333"
             subflows_[i].dport_ = dsts_[j].port_;
             subflows_[i].tcp_->daddr () = dsts_[j].addr_;
             subflows_[i].tcp_->dport () = dsts_[j].port_;
