@@ -415,7 +415,7 @@ MptcpAgent::send_control ()
         //int sendbytes = total_bytes_;
         //while(sendbytes >= mss) {
           //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[1].xpass_->advance_bytes( (int64_t) total_bytes_/2);
+          subflows_[1].xpass_->advance_bytes( (int64_t) 500);
           //mcurseq_ += mss;
           //sendbytes -= mss;
           //}
