@@ -117,6 +117,7 @@ protected:
 
   Classifier *core_;
   bool infinite_send_;
+  bool is_xpass;
   int sub_num_;
   int dst_num_;
   int total_bytes_;

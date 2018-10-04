@@ -48,7 +48,7 @@ public:
 
 class_mptcp;
 
-MptcpAgent::MptcpAgent ():Agent (PT_TCP), sub_num_ (0), total_bytes_ (0),
+MptcpAgent::MptcpAgent ():Agent (PT_TCP), is_xpass(false), sub_num_ (0), total_bytes_ (0),
 mcurseq_ (1), mackno_ (1), infinite_send_(false)
 {
 }
@@ -137,6 +137,7 @@ MptcpAgent::command (int argc, const char *const *argv)
       subflows_[id].port_ = subflows_[id].tcp_->port ();
       subflows_[id].tcp_->mptcp_set_core (this);
       sub_num_++;
+      is_xpass=true;
       return (TCL_OK);
     }
     else if  (strcmp (argv[1], "attach-xpass") == 0) {
@@ -334,77 +335,87 @@ MptcpAgent::send_control ()
   if (total_bytes_ > 0 && infinite_send_) {
     /* one round */
     bool slow_start = false;
-    for (int i = 0; i < sub_num_; i++) {
-      if( subflows_[id].is_xpass==false){
-        int mss = subflows_[i].tcp_->size ();
-        double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
-        int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
-        int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
-        int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
-        int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
-        int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
-      }
+    case(is_xpass){
+      {
+        case false:
+          for (int i = 0; i < sub_num_; i++) {
+            int mss = subflows_[i].tcp_->size ();
+            double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
+            int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
+            int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
+            int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
+            int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
+            int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
 
 #if 1
-	  // we don't utlize a path which has lots of timeouts
-      if (backoff >= 4) continue;
+          // we don't utlize a path which has lots of timeouts
+            if (backoff >= 4) continue;
 #endif
 
-      /* too naive logic to calculate outstanding bytes? */
-      int outstanding = maxseq - highest_ack - dupacks * mss;
-      if (outstanding <= 0) outstanding = 0;
+            /* too naive logic to calculate outstanding bytes? */
+            int outstanding = maxseq - highest_ack - dupacks * mss;
+            if (outstanding <= 0) outstanding = 0;
 
-      if (cwnd < ssthresh) {
-        /* allow only one subflow to do slow start at the same time */
-        if (!slow_start&&subflows_[id].is_xpass==false) {
-          slow_start = true;
-          subflows_[i].tcp_->mptcp_set_slowstart (true);
-        }
-        else if(subflows_[id].is_xpass==false)
+            if (cwnd < ssthresh) {
+              /* allow only one subflow to do slow start at the same time */
+              if (!slow_start) {
+                slow_start = true;
+                subflows_[i].tcp_->mptcp_set_slowstart (true);
+              }
+              else
 #if 0
-          subflows_[i].tcp_->mptcp_set_slowstart (false);
+                subflows_[i].tcp_->mptcp_set_slowstart (false);
 #else
-          /* allow to do slow-start simultaneously */
-          subflows_[i].tcp_->mptcp_set_slowstart (true);
+                /* allow to do slow-start simultaneously */
+                subflows_[i].tcp_->mptcp_set_slowstart (true);
 #endif
-      }
+            }
+            int sendbytes = cwnd - outstanding;
+            if (sendbytes < mss)
+              continue;
+            if (sendbytes > total_bytes_)
+              sendbytes = total_bytes_;
 
-      int sendbytes = cwnd - outstanding;
-      if (sendbytes < mss)
-        continue;
-      if (sendbytes > total_bytes_)
-        sendbytes = total_bytes_;
+            //if (sendbytes > mss) sendbytes = mss;
+            while(sendbytes >= mss) {
+              subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
+              subflows_[i].tcp_->sendmsg (mss);
+              mcurseq_ += mss;
+              sendbytes -= mss;
+            }
 
-      //if (sendbytes > mss) sendbytes = mss;
-      while(sendbytes >= mss) {
-        if(subflows_[id].is_xpass==false){
-          subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[i].tcp_->sendmsg (mss);
-        }else{
-          //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[i].xpass->advance_bytes (mss);
-        }
-        mcurseq_ += mss;
-        sendbytes -= mss;
-      }
-
-	  if (!infinite_send_)
-        total_bytes_ -= sendbytes;
-
+          if (!infinite_send_)
+              total_bytes_ -= sendbytes;
 #if 0
-      if (!slow_start) {
-         double cwnd_i = subflows_[i].tcp_->mptcp_get_cwnd ();
-         /*
-            As recommended in 4.1 of draft-ietf-mptcp-congestion-05
-            Update alpha only if cwnd_i/mss_i != cwnd_new_i/mss_i.
-         */
-         if (abs(subflows_[i].tcp_->mptcp_get_last_cwnd () - cwnd_i) < 1) {
-            calculate_alpha ();
-         }
-         subflows_[i].tcp_->mptcp_set_last_cwnd (cwnd_i);
-      }
+            if (!slow_start) {
+              double cwnd_i = subflows_[i].tcp_->mptcp_get_cwnd ();
+              /*
+                  As recommended in 4.1 of draft-ietf-mptcp-congestion-05
+                  Update alpha only if cwnd_i/mss_i != cwnd_new_i/mss_i.
+              */
+              if (abs(subflows_[i].tcp_->mptcp_get_last_cwnd () - cwnd_i) < 1) {
+                  calculate_alpha ();
+              }
+              subflows_[i].tcp_->mptcp_set_last_cwnd (cwnd_i);
+            }
 #endif
-    }
+          }
+        case true :
+          for (int i = 0; i < sub_num_; i++) {
+            int mss = subflows_[i].xpass_->max_segment ();
+            sendbytes = total_bytes_;
+
+            while(sendbytes >= mss) {
+              //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
+              subflows_[i].xpass_->advance_bytes (mss);
+              mcurseq_ += mss;
+              sendbytes -= mss;
+            }
+
+          if (!infinite_send_)
+              total_bytes_ -= sendbytes;
+          }
+
   }
 }
 
