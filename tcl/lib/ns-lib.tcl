@@ -1552,6 +1552,7 @@ Simulator instproc multihome-attach-agent { core agent } {
       		set entry [$ifNode entry]
 
       		# give the interface info to the agent
+			  puts "Interface : $interface"
 			  puts "addr : $addr"
 			  puts "port : $port"
 			  puts "entry : $entry"
