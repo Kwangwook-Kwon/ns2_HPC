@@ -96,9 +96,14 @@ MptcpAgent::command (int argc, const char *const *argv)
 {
   if (argc == 2) {
     if (strcmp (argv[1], "listen") == 0) {
-      for (int i = 0; i < sub_num_; i++) {
-        if (subflows_[i].tcp_->command (argc, argv) != TCL_OK)
-          return (TCL_ERROR);
+      if(is_xpass==false){
+        for (int i = 0; i < sub_num_; i++) {
+          if (subflows_[i].tcp_->command (argc, argv) != TCL_OK)
+            return (TCL_ERROR);
+        } else {
+          if (subflows_[i].xpass_->command (argc, argv) != TCL_OK)
+            return (TCL_ERROR);
+        }
       }
       return (TCL_OK);
     }
