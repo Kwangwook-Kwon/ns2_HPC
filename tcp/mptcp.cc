@@ -407,6 +407,7 @@ MptcpAgent::send_control ()
               subflows_[i].tcp_->mptcp_set_last_cwnd (cwnd_i);
             }
 #endif
+          break;
         }
         case true :
           for (int i = 0; i < sub_num_; i++) {
@@ -424,6 +425,7 @@ MptcpAgent::send_control ()
           if (!infinite_send_)
               total_bytes_ -= sendbytes;
           }
+          break;
     }
   }
 }

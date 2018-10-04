@@ -510,6 +510,7 @@ void XPassAgent::send_credit_stop() {
 }
 
 void XPassAgent::advance_bytes(seq_t nb) {
+  printf("advance_bytes called\n");
   if(credit_recv_state_ != XPASS_RECV_CLOSED) {
     fprintf(stderr, "ERROR: tried to advance_bytes without XPASS_RECV_CLOSED\n");
   }
