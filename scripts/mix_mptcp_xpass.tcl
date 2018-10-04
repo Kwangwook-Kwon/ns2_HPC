@@ -58,12 +58,12 @@ set r1 [$ns node]
 set r2 [$ns node]
 
 $ns simplex-link $node0_0 $r1      10Mb 5ms DropTail
-$ns simplex-link $r1	  $node0   10Mb 5ms XPassDropTail
+$ns simplex-link $r1	  $node0_0  10Mb 5ms XPassDropTail
 $ns simplex-link $node1_0 $r1      10Mb 5ms DropTail
 $ns simplex-link $r1	  $node1_0 10Mb 5ms XPassDropTail
 
 $ns simplex-link $node0_1 $r2      10Mb 5ms DropTail
-$ns simplex-link $r2      $node1   10Mb 5ms XPassDropTail
+$ns simplex-link $r2      $node0_1   10Mb 5ms XPassDropTail
 $ns simplex-link $node1_1 $r2      10Mb 5ms DropTail
 $ns simplex-link $r2      $node1_1 10Mb 5ms XPassDropTail
 
