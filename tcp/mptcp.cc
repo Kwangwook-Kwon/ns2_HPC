@@ -409,14 +409,14 @@ MptcpAgent::send_control ()
 #endif
         }
         case true :
-          printf("Send-msg called \n");
           for (int i = 0; i < sub_num_; i++) {
             int mss = subflows_[i].xpass_->max_segment ();
             int sendbytes = total_bytes_;
 
             while(sendbytes >= mss) {
               //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-              subflows_[i].xpass_->advance_bytes (mss);
+              printf("Send-msg called \n");
+              subflows_[i].xpass_->command( 3, "advance-bytes", mss);
               mcurseq_ += mss;
               sendbytes -= mss;
             }
