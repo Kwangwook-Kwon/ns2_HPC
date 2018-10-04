@@ -89,10 +89,6 @@ $mptcp attach-xpass $agent1
 $ns multihome-attach-agent $node0 $mptcp
 
 
-set ftp [new Application/FTP]
-$ftp attach-agent $mptcp
-
-
 #
 #Create mptcp  reciever
 #
@@ -115,7 +111,7 @@ $ns multihome-connect $mptcp $mptcpsink
 
 
 puts "Simulation started."
-$ns at 0.0 "$ftp start"
+$ns at 0.0 "$mptcp send-msg 1000000"
 $ns at 3.0 "finish"
 $ns run
 
