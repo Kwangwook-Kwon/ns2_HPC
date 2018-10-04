@@ -129,7 +129,6 @@ Node::Node() :
 	}
 #endif //HAVE_STL
 	neighbor_list_ = NULL;
-	printf("node created\n");
 }
 
 Node::~Node()
@@ -139,7 +138,7 @@ Node::~Node()
 
 int
 Node::command(int argc, const char*const* argv)
-{
+{	printf("%s called\n " , argv[1]);
 	Tcl& tcl = Tcl::instance();
 	if (argc == 2) {
 #ifdef HAVE_STL
