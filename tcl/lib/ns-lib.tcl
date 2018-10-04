@@ -1556,7 +1556,7 @@ Simulator instproc multihome-attach-agent { core agent } {
 			  puts "addr : $addr"
 			  puts "port : $port"
 			  puts "entry : $entry"
-			  puts "corelink : $corelink"
+			  puts "corelink : $coreLink"
 		$agent add-multihome-interface $addr $port $entry $coreLink
 			
       		$agent instvar multihome_bindings_
