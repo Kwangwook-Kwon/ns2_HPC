@@ -1552,11 +1552,7 @@ Simulator instproc multihome-attach-agent { core agent } {
       		set entry [$ifNode entry]
 
       		# give the interface info to the agent
-			  puts "Interface : $interface"
-			  puts "addr : $addr"
-			  puts "port : $port"
-			  puts "entry : $entry"
-			  puts "corelink : $coreLink"
+
 		$agent add-multihome-interface $addr $port $entry $coreLink
 			
       		$agent instvar multihome_bindings_
