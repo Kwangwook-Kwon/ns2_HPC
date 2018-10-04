@@ -124,12 +124,12 @@ MptcpAgent::command (int argc, const char *const *argv)
   printf ("debug 3\n");
             subflows_[i].daddr_ = dsts_[j].addr_;
             subflows_[i].dport_ = dsts_[j].port_;
-            if(is_xpass == false){
-  printf ("debug 4\n");
+            if (is_xpass == false){
+  printf ("debug 4, is_xpass : %d \n", is_xpass);
               subflows_[i].tcp_->daddr () = dsts_[j].addr_;
               subflows_[i].tcp_->dport () = dsts_[j].port_;
-            }else{
-  printf ("debug 5\n");
+            } else if (is_xpass == true ) {
+  printf ("debug 5, is_xpass : %d \n", is_xpass);
               subflows_[i].xpass_->daddr () = dsts_[j].addr_;
               subflows_[i].xpass_->dport () = dsts_[j].port_;
             }
