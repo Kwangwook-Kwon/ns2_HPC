@@ -410,7 +410,7 @@ MptcpAgent::send_control ()
       }
     } else {
       printf("Send-msg called111 \n");
-      for (int i = 0; i <= sub_num_; i++) {
+      for (int i = 0; i < sub_num_; i++) {
         //int mss = subflows_[i].xpass_->max_segment ();
         //int sendbytes = total_bytes_;
         //while(sendbytes >= mss) {
