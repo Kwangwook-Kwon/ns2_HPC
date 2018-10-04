@@ -519,16 +519,16 @@ void XPassAgent::advance_bytes(seq_t nb) {
   }
 
   // advance bytes
-  print("DEBUG 111111\n")
+  printf("DEBUG 111111\n")
   curseq_ += nb;
- print("DEBUG 2222222\n")
+ printf("DEBUG 2222222\n")
   // send credit request
   send(construct_credit_request(), 0);
   sender_retransmit_timer_.sched(retransmit_timeout_);
 
   // XPASS_RECV_CLOSED -> XPASS_RECV_CREDIT_REQUEST_SENT
   credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
-   print("DEBUG 3333333\n")
+   printf("DEBUG 3333333\n")
 }
 
 void XPassAgent::process_ack(Packet *pkt) {
