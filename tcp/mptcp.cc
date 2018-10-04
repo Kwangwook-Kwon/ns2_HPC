@@ -93,7 +93,7 @@ MptcpAgent::trace (TracedVar * v)
 
 int
 MptcpAgent::command (int argc, const char *const *argv)
-{printf("%s called at mptcp\n", argv[1]);
+{printf("%s called at mptcp with argc : %d \n", argv[1], argc);
   if (argc == 2) {
     if (strcmp (argv[1], "listen") == 0) {
       if(is_xpass == false){
@@ -111,11 +111,11 @@ MptcpAgent::command (int argc, const char *const *argv)
     }
 
     if (strcmp (argv[1], "reset") == 0) {
-      printf("0000000000");
+      printf("0000000000\n");
       /* reset used flag information */
       bool used_dst[dst_num_];
       for (int j = 0; j < dst_num_; j++) used_dst[j] = false;
-      printf("101010101010");
+      printf("101010101010\n");
       for (int i = 0; i < sub_num_; i++) {
         for (int j = 0; j < dst_num_; j++) {
 
