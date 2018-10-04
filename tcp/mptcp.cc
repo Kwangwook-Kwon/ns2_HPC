@@ -342,6 +342,7 @@ MptcpAgent::sendmsg (int nbytes, const char * /*flags */ )
 void
 MptcpAgent::send_control ()
 {
+            printf("Send-msg called0000 \n");
   if (total_bytes_ > 0 && infinite_send_) {
     /* one round */
     bool slow_start = false;
@@ -410,13 +411,14 @@ MptcpAgent::send_control ()
           break;
         }
         case true :
+          printf("Send-msg called111 \n");
           for (int i = 0; i < sub_num_; i++) {
             int mss = subflows_[i].xpass_->max_segment ();
             int sendbytes = total_bytes_;
 
             while(sendbytes >= mss) {
               //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-              printf("Send-msg called \n");
+              printf("Send-msg called222 \n");
               subflows_[i].xpass_->advance_bytes(mss);
               mcurseq_ += mss;
               sendbytes -= mss;
