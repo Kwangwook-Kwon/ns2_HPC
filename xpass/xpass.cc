@@ -248,6 +248,7 @@ void XPassAgent::recv_credit(Packet *pkt) {
 }
 
 void XPassAgent::recv_data(Packet *pkt) {
+  printf ("Data Recv !!! \n");
   hdr_xpass *xph = hdr_xpass::access(pkt);
   // distance between expected sequence number and actual sequence number.
   int distance = xph->credit_seq() - c_recv_next_;
