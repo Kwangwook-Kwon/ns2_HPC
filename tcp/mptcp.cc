@@ -343,7 +343,7 @@ void
 MptcpAgent::send_control ()
 {
   printf("Send-msg called0000 \n");
-  if (total_bytes_ > 0 && infinite_send_) {
+  if (total_bytes_ > 0 || infinite_send_) {
     /* one round */
     bool slow_start = false;
     if(is_xpass == false){
