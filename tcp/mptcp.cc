@@ -154,7 +154,6 @@ MptcpAgent::command (int argc, const char *const *argv)
       subflows_[id].port_ = subflows_[id].tcp_->port ();
       subflows_[id].tcp_->mptcp_set_core (this);
       sub_num_++;
-      is_xpass=true;
       return (TCL_OK);
     }
     else if  (strcmp (argv[1], "attach-xpass") == 0) {
@@ -166,6 +165,7 @@ MptcpAgent::command (int argc, const char *const *argv)
       subflows_[id].port_ = subflows_[id].xpass_->port ();
       //subflows_[id].tcp_->mptcp_set_core (this);
       sub_num_++;
+      is_xpass=true;
       return (TCL_OK);
     }
     else if (strcmp (argv[1], "set-multihome-core") == 0) {
