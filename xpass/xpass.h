@@ -218,9 +218,6 @@ protected:
   Packet* construct_credit();
   Packet* construct_data(Packet *credit);
   Packet* construct_nack(seq_t seq_no);
-  void send_credit();
-  void send_credit_stop();
-  void advance_bytes(seq_t nb);
 
   void recv_credit_request(Packet *pkt);
   void recv_credit(Packet *pkt);
