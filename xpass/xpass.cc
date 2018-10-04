@@ -128,6 +128,7 @@ int XPassAgent::command(int argc, const char*const* argv) {
     }
   } else if (argc == 3) {
     if (strcmp(argv[1], "advance-bytes") == 0) {
+      printf("advance-bytes calld : %d" , argv[2]);
       if (credit_recv_state_ == XPASS_RECV_CLOSED) {
         advance_bytes(atol(argv[2]));
         return TCL_OK;
