@@ -983,7 +983,7 @@ Simulator instproc run {} {
 	#
 
 	foreach nn [array names Node_] {
-		puts "1111 $Node_($nn)"
+		puts "1111 $nn"
 		$Node_($nn) reset
 		puts "2222"
 		# GFR Additions for NixVector Routing
