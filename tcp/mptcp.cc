@@ -175,7 +175,10 @@ MptcpAgent::command (int argc, const char *const *argv)
                  argv[2]);
         return (TCL_ERROR);
       }
-      subflows_[id].tcp_->port () = atoi (argv[3]);
+      if(subflows_[id].is_xpass==false)
+        subflows_[id].tcp_->port () = atoi (argv[3]);
+      else
+        subflows_[id].xpass_->port() = atoi (argv[3]);
       subflows_[id].port_ = atoi (argv[3]);
       subflows_[id].target_ = (NsObject *) TclObject::lookup (argv[4]);
       subflows_[id].link_ = (NsObject *) TclObject::lookup (argv[5]);
