@@ -995,10 +995,8 @@ Simulator instproc run {} {
 	#
 
 	foreach qn [array names link_] {
-			puts "qeue reset start "
 		set q [$link_($qn) queue]
 		$q reset
-					puts "qeue reset end "
 	}
 
 	# Do all nam-related initialization here
