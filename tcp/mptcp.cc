@@ -103,11 +103,11 @@ MptcpAgent::command (int argc, const char *const *argv)
       return (TCL_OK);
     }
     if (strcmp (argv[1], "reset") == 0) {
-
+      printf("0000000000");
       /* reset used flag information */
       bool used_dst[dst_num_];
       for (int j = 0; j < dst_num_; j++) used_dst[j] = false;
-
+      printf("101010101010");
       for (int i = 0; i < sub_num_; i++) {
         for (int j = 0; j < dst_num_; j++) {
 
