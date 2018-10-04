@@ -409,19 +409,19 @@ MptcpAgent::send_control ()
 #endif
       }
     } else {
-      for (int i = 0; i < sub_num_; i++) {
+      //for (int i = 0; i < sub_num_; i++) {
           printf("Send-msg called, subflow : %d \n", i);
         //int mss = subflows_[i].xpass_->max_segment ();
         //int sendbytes = total_bytes_;
         //while(sendbytes >= mss) {
           //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[i].xpass_->advance_bytes( (int64_t) total_bytes_/2);
+          subflows_[1].xpass_->advance_bytes( (int64_t) total_bytes_/2);
           //mcurseq_ += mss;
           //sendbytes -= mss;
           //}
           //if (!infinite_send_)
           //total_bytes_ -= sendbytes;
-      }
+      //}
     }
   }
 }
