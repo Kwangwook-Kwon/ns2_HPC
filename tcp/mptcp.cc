@@ -100,11 +100,12 @@ MptcpAgent::command (int argc, const char *const *argv)
         for (int i = 0; i < sub_num_; i++) {
           if (subflows_[i].tcp_->command (argc, argv) != TCL_OK)
             return (TCL_ERROR);
-        } else {
+          } 
+      }else {
           if (subflows_[i].xpass_->command (argc, argv) != TCL_OK)
             return (TCL_ERROR);
-        }
       }
+    }
       return (TCL_OK);
     }
     if (strcmp (argv[1], "reset") == 0) {
