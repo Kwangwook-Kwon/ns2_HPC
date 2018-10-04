@@ -141,13 +141,13 @@ int XPassAgent::command(int argc, const char*const* argv) {
 }
 
 void XPassAgent::recv(Packet* pkt, Handler*) {
-  printf("Packet Recieved\d");
+  printf("Packet Recieved\n");
   hdr_cmn *cmnh = hdr_cmn::access(pkt);
 
   switch (cmnh->ptype()) {
     case PT_XPASS_CREDIT_REQUEST:
       recv_credit_request(pkt);
-      printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \d");
+      printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
       break;
     case PT_XPASS_CREDIT:
       recv_credit(pkt);

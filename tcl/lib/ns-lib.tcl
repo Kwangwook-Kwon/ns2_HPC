@@ -1005,7 +1005,6 @@ Simulator instproc run {} {
 	# NIXVECTOR xxx?
 	# global simstart
 	# set simstart [clock seconds]
-	puts "scheduler_ run"
 	return [$scheduler_ run]
 }
 
