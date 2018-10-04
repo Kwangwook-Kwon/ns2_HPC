@@ -112,9 +112,6 @@ $ns multihome-connect $mptcp $mptcpsink
 
 puts "Simulation started."
 $ns at 0.0 "$mptcp send-msg 1000000"
-puts "1111"
 $ns at 3.0 "finish"
-puts "2222"
 $ns run
-puts "3333"
 

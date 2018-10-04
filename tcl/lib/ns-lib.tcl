@@ -983,11 +983,14 @@ Simulator instproc run {} {
 	#
 
 	foreach nn [array names Node_] {
+		puts "1111"
 		$Node_($nn) reset
+		puts "2222"
 		# GFR Additions for NixVector Routing
 		if { [Simulator set nix-routing] } {
 			$Node_($nn) populate-objects
 		}
+		puts "333"
 	}
 
 	#
