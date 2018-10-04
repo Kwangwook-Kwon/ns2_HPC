@@ -96,7 +96,7 @@ MptcpAgent::command (int argc, const char *const *argv)
 {
   if (argc == 2) {
     if (strcmp (argv[1], "listen") == 0) {
-      if(is_xpass==false){
+      if(is_xpass == false){
         for (int i = 0; i < sub_num_; i++) {
           if (subflows_[i].tcp_->command (argc, argv) != TCL_OK)
             return (TCL_ERROR);
@@ -107,9 +107,9 @@ MptcpAgent::command (int argc, const char *const *argv)
             return (TCL_ERROR);
         }
       }
-    }
       return (TCL_OK);
     }
+
     if (strcmp (argv[1], "reset") == 0) {
       printf("0000000000");
       /* reset used flag information */
