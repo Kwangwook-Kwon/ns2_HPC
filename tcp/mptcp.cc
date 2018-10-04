@@ -336,26 +336,24 @@ MptcpAgent::send_control ()
     /* one round */
     bool slow_start = false;
     switch(is_xpass){
-      {
-        case false:
-          for (int i = 0; i < sub_num_; i++) {
-            int mss = subflows_[i].tcp_->size ();
-            double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
-            int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
-            int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
-            int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
-            int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
-            int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
+      case false:
+        for (int i = 0; i < sub_num_; i++) {
+          int mss = subflows_[i].tcp_->size ();
+          double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
+          int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
+          int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
+          int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
+          int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
+          int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
 
 #if 1
           // we don't utlize a path which has lots of timeouts
-            if (backoff >= 4) continue;
+          if (backoff >= 4) continue;
 #endif
 
-            /* too naive logic to calculate outstanding bytes? */
-            int outstanding = maxseq - highest_ack - dupacks * mss;
-            if (outstanding <= 0) outstanding = 0;
-
+          /* too naive logic to calculate outstanding bytes? */
+          int outstanding = maxseq - highest_ack - dupacks * mss;
+          if (outstanding <= 0) outstanding = 0;
             if (cwnd < ssthresh) {
               /* allow only one subflow to do slow start at the same time */
               if (!slow_start) {
@@ -369,20 +367,20 @@ MptcpAgent::send_control ()
                 /* allow to do slow-start simultaneously */
                 subflows_[i].tcp_->mptcp_set_slowstart (true);
 #endif
-            }
-            int sendbytes = cwnd - outstanding;
-            if (sendbytes < mss)
-              continue;
-            if (sendbytes > total_bytes_)
-              sendbytes = total_bytes_;
+          }
+          int sendbytes = cwnd - outstanding;
+          if (sendbytes < mss)
+            continue;
+          if (sendbytes > total_bytes_)
+            sendbytes = total_bytes_;
 
-            //if (sendbytes > mss) sendbytes = mss;
-            while(sendbytes >= mss) {
-              subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-              subflows_[i].tcp_->sendmsg (mss);
-              mcurseq_ += mss;
-              sendbytes -= mss;
-            }
+          //if (sendbytes > mss) sendbytes = mss;
+          while(sendbytes >= mss) {
+            subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
+            subflows_[i].tcp_->sendmsg (mss);
+            mcurseq_ += mss;
+            sendbytes -= mss;
+          }
 
           if (!infinite_send_)
               total_bytes_ -= sendbytes;
@@ -399,11 +397,11 @@ MptcpAgent::send_control ()
               subflows_[i].tcp_->mptcp_set_last_cwnd (cwnd_i);
             }
 #endif
-          }
+        }
         case true :
           for (int i = 0; i < sub_num_; i++) {
             int mss = subflows_[i].xpass_->max_segment ();
-            sendbytes = total_bytes_;
+            int sendbytes = total_bytes_;
 
             while(sendbytes >= mss) {
               //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
@@ -415,7 +413,7 @@ MptcpAgent::send_control ()
           if (!infinite_send_)
               total_bytes_ -= sendbytes;
           }
-
+    }
   }
 }
 
