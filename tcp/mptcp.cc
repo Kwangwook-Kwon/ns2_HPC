@@ -157,6 +157,15 @@ MptcpAgent::command (int argc, const char *const *argv)
       }
       return (TCL_OK);
     }
+
+    else if (strcmp (argv[1], "send-msg") == 0) {
+      int msg_len = atoi (argv[2]);
+      if (msg_len <=0 ){
+        return (TCL_ERROR);
+      }
+      sendmsg(msg_len);
+      return(TCL_OK);
+    }
   }
   if (argc == 4) {
     if (strcmp (argv[1], "add-multihome-destination") == 0) {
@@ -326,14 +335,15 @@ MptcpAgent::send_control ()
     /* one round */
     bool slow_start = false;
     for (int i = 0; i < sub_num_; i++) {
-
-      int mss = subflows_[i].tcp_->size ();
-      double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
-      int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
-      int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
-      int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
-      int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
-      int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
+      if( subflows_[id].is_xpass==false){
+        int mss = subflows_[i].tcp_->size ();
+        double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
+        int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
+        int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
+        int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
+        int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
+        int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
+      }
 
 #if 1
 	  // we don't utlize a path which has lots of timeouts
@@ -346,11 +356,11 @@ MptcpAgent::send_control ()
 
       if (cwnd < ssthresh) {
         /* allow only one subflow to do slow start at the same time */
-        if (!slow_start) {
+        if (!slow_start&&subflows_[id].is_xpass==false) {
           slow_start = true;
           subflows_[i].tcp_->mptcp_set_slowstart (true);
         }
-        else
+        else if(subflows_[id].is_xpass==false)
 #if 0
           subflows_[i].tcp_->mptcp_set_slowstart (false);
 #else
@@ -367,8 +377,13 @@ MptcpAgent::send_control ()
 
       //if (sendbytes > mss) sendbytes = mss;
       while(sendbytes >= mss) {
-        subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-        subflows_[i].tcp_->sendmsg (mss);
+        if(subflows_[id].is_xpass==false){
+          subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
+          subflows_[i].tcp_->sendmsg (mss);
+        }else{
+          //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
+          subflows_[i].xpass->advance_bytes (mss);
+        }
         mcurseq_ += mss;
         sendbytes -= mss;
       }
