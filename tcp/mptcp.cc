@@ -93,7 +93,7 @@ MptcpAgent::trace (TracedVar * v)
 
 int
 MptcpAgent::command (int argc, const char *const *argv)
-{
+{printf("$s called at mptcp\n", argv[1]);
   if (argc == 2) {
     if (strcmp (argv[1], "listen") == 0) {
       if(is_xpass == false){
