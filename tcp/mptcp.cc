@@ -111,33 +111,31 @@ MptcpAgent::command (int argc, const char *const *argv)
     }
 
     if (strcmp (argv[1], "reset") == 0) {
-      printf("0000000000\n");
       /* reset used flag information */
       bool used_dst[dst_num_];
       for (int j = 0; j < dst_num_; j++) used_dst[j] = false;
-      printf("101010101010\n");
       for (int i = 0; i < sub_num_; i++) {
         for (int j = 0; j < dst_num_; j++) {
 
           /* if this destination is already used by other subflow, don't use it */
           if (used_dst[j]) continue;
-          printf ("test :111");
           if (check_routable (i, dsts_[j].addr_, dsts_[j].port_)) {
-                      printf ("test :222");
             subflows_[i].daddr_ = dsts_[j].addr_;
-                      printf ("test :333");
             subflows_[i].dport_ = dsts_[j].port_;
-                      printf ("test :444");
-            subflows_[i].tcp_->daddr () = dsts_[j].addr_;
-                      printf ("test :555");
-            subflows_[i].tcp_->dport () = dsts_[j].port_;
-                      printf ("test :666");
+            if(is_xpass == false){
+              subflows_[i].tcp_->daddr () = dsts_[j].addr_;
+              subflows_[i].tcp_->dport () = dsts_[j].port_;
+            }else{
+              subflows_[i].xpass_->daddr () = dsts_[j].addr_;
+              subflows_[i].xpass_->dport () = dsts_[j].port_;
+            }
             used_dst[j] = true; 
             break;
           }
         }
       }
-      subflows_[0].tcp_->mptcp_set_primary ();
+      if(is_xpass == false)
+        subflows_[0].tcp_->mptcp_set_primary ();
       return (TCL_OK);
     }
   }
