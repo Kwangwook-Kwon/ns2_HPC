@@ -116,7 +116,7 @@ MptcpAgent::command (int argc, const char *const *argv)
       for (int j = 0; j < dst_num_; j++) used_dst[j] = false;
       for (int i = 0; i < sub_num_; i++) {
         for (int j = 0; j < dst_num_; j++) {
-
+          printf ("debug 1\n");
           /* if this destination is already used by other subflow, don't use it */
           if (used_dst[j]) continue;
           if (check_routable (i, dsts_[j].addr_, dsts_[j].port_)) {
@@ -126,6 +126,7 @@ MptcpAgent::command (int argc, const char *const *argv)
               subflows_[i].tcp_->daddr () = dsts_[j].addr_;
               subflows_[i].tcp_->dport () = dsts_[j].port_;
             }else{
+                        printf ("debug 2\n");
               subflows_[i].xpass_->daddr () = dsts_[j].addr_;
               subflows_[i].xpass_->dport () = dsts_[j].port_;
             }
@@ -134,8 +135,10 @@ MptcpAgent::command (int argc, const char *const *argv)
           }
         }
       }
+                printf ("debug 3\n");
       if(is_xpass == false)
         subflows_[0].tcp_->mptcp_set_primary ();
+                printf ("debug 4\n");
       return (TCL_OK);
     }
   }
