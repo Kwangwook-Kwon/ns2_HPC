@@ -108,9 +108,9 @@ $mptcpsink attach-xpass $agent3
 
 $ns multihome-attach-agent $node1 $mptcpsink
 $ns multihome-connect $mptcp $mptcpsink
-$ns connect $agent0 $agent2
-$ns connect $agent1 $agent3
-#$mptcpsink listen
+#$ns connect $agent0 $agent2
+#$ns connect $agent1 $agent3
+$mptcpsink listen
 
 
 

@@ -254,36 +254,45 @@ MptcpAgent::recv (Packet * pkt, Handler * h)
              "MptcpAgent:recv() fatal error. cannot find destination\n");
     abort ();
   }
+  if(is_xpass == false){
+    /* processing mptcp options */
+    if (tcph->mp_capable ()) {
+      /* if we receive mpcapable option, return the same option as response */
+      subflows_[id].tcp_->mpcapable_ = true;
+    }
+    if (tcph->mp_join ()) {
+      /* if we receive mpjoin option, return the same option as response */
+      subflows_[id].tcp_->mpjoin_ = true;
+    }
+    if (tcph->mp_ack ()) {
+      /* when we receive mpack, erase the acked record */
+      subflows_[id].tcp_->mptcp_remove_mapping (tcph->mp_ack ());
+    }
 
-  /* processing mptcp options */
-  if (tcph->mp_capable ()) {
-    /* if we receive mpcapable option, return the same option as response */
-    subflows_[id].tcp_->mpcapable_ = true;
-  }
-  if (tcph->mp_join ()) {
-    /* if we receive mpjoin option, return the same option as response */
-    subflows_[id].tcp_->mpjoin_ = true;
-  }
-  if (tcph->mp_ack ()) {
-    /* when we receive mpack, erase the acked record */
-    subflows_[id].tcp_->mptcp_remove_mapping (tcph->mp_ack ());
-  }
-
-  if (tcph->mp_dsn ()) {
-    /* when we receive mpdata, update new mapping */
-    subflows_[id].tcp_->mpack_ = true;
-    subflows_[id].tcp_->mptcp_recv_add_mapping (tcph->mp_dsn (),
-                                                tcph->mp_subseq (),
-                                                tcph->mp_dsnlen ());
+    if (tcph->mp_dsn ()) {
+      /* when we receive mpdata, update new mapping */
+      subflows_[id].tcp_->mpack_ = true;
+      subflows_[id].tcp_->mptcp_recv_add_mapping (tcph->mp_dsn (),
+                                                  tcph->mp_subseq (),
+                                                  tcph->mp_dsnlen ());
+    }
   }
 
   /* make sure packet will be return to the src addr of the packet */
-  subflows_[id].tcp_->daddr () = iph->saddr ();
-  subflows_[id].tcp_->dport () = iph->sport ();
-
+  if(is_xpass == false){
+    subflows_[id].tcp_->daddr () = iph->saddr ();
+    subflows_[id].tcp_->dport () = iph->sport ();
+  } else {
+    subflows_[id].xpass_->daddr () = iph->saddr ();
+    subflows_[id].xpass_->dport () = iph->sport ();
+  }
   /* call subflow's recv function */
-  subflows_[id].tcp_->recv (pkt, h);
+  if(is_xpass == false)
+    subflows_[id].tcp_->recv (pkt, h);
+  else 
+    subflows_[id].xpass_->recv (pkt, h);
 
+  if(is_xpass == false)  
   send_control ();
 }
 
@@ -409,19 +418,18 @@ MptcpAgent::send_control ()
 #endif
       }
     } else {
-      //for (int i = 0; i < sub_num_; i++) {
-          //printf("Send-msg called, subflow : %d \n", i);
+      for (int i = 0; i < sub_num_; i++) {
         //int mss = subflows_[i].xpass_->max_segment ();
         //int sendbytes = total_bytes_;
         //while(sendbytes >= mss) {
           //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[1].xpass_->advance_bytes( (int64_t) 500);
+          subflows_[i].xpass_->advance_bytes( (int64_t) total_bytes_/2);
           //mcurseq_ += mss;
           //sendbytes -= mss;
           //}
           //if (!infinite_send_)
           //total_bytes_ -= sendbytes;
-      //}
+      }
     }
   }
 }

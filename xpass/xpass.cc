@@ -141,7 +141,6 @@ int XPassAgent::command(int argc, const char*const* argv) {
 }
 
 void XPassAgent::recv(Packet* pkt, Handler*) {
-  printf("Packet Recieved\n");
   hdr_cmn *cmnh = hdr_cmn::access(pkt);
 
   switch (cmnh->ptype()) {
