@@ -34,40 +34,39 @@
 #include "template.h"
 #include "mptcp.h"
 
-static class MptcpClass:public TclClass
+static class MptcpClass : public TclClass
 {
 public:
-  MptcpClass ():TclClass ("Agent/MPTCP")
+  MptcpClass() : TclClass("Agent/MPTCP")
   {
   }
-  TclObject *create (int, const char *const *)
+  TclObject *create(int, const char *const *)
   {
-    return (new MptcpAgent ());
+    return (new MptcpAgent());
   }
 }
 
 class_mptcp;
 
-MptcpAgent::MptcpAgent ():Agent (PT_TCP), is_xpass(false), sub_num_ (0), total_bytes_ (0),
-mcurseq_ (1), mackno_ (1), infinite_send_(false)
+MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
+                           mcurseq_(1), mackno_(1), infinite_send_(false)
 {
 }
 
-void
-MptcpAgent::delay_bind_init_all ()
+void MptcpAgent::delay_bind_init_all()
 {
-  Agent::delay_bind_init_all ();
+  Agent::delay_bind_init_all();
   delay_bind_init_one("use_olia_");
 }
 
 /* haven't implemented yet */
-int
-MptcpAgent::delay_bind_dispatch (const char *varName,
-                                 const char *localName,
-                                 TclObject * tracer)
+int MptcpAgent::delay_bind_dispatch(const char *varName,
+                                    const char *localName,
+                                    TclObject *tracer)
 {
-  if (delay_bind_bool(varName, localName, "use_olia_", &use_olia_, tracer)) return TCL_OK;
-  return Agent::delay_bind_dispatch (varName, localName, tracer);
+  if (delay_bind_bool(varName, localName, "use_olia_", &use_olia_, tracer))
+    return TCL_OK;
+  return Agent::delay_bind_dispatch(varName, localName, tracer);
 }
 
 #if 0
@@ -91,218 +90,253 @@ MptcpAgent::trace (TracedVar * v)
 }
 #endif
 
-int
-MptcpAgent::command (int argc, const char *const *argv)
+int MptcpAgent::command(int argc, const char *const *argv)
 {
-  if (argc == 2) {
-    if (strcmp (argv[1], "listen") == 0) {
-      if(is_xpass == false){
-        for (int i = 0; i < sub_num_; i++) {
-          if (subflows_[i].tcp_->command (argc, argv) != TCL_OK)
+  if (argc == 2)
+  {
+    if (strcmp(argv[1], "listen") == 0)
+    {
+      if (is_xpass == false)
+      {
+        for (int i = 0; i < sub_num_; i++)
+        {
+          if (subflows_[i].tcp_->command(argc, argv) != TCL_OK)
             return (TCL_ERROR);
-          } 
-      }else {
-        for (int i = 0; i < sub_num_; i++) {
-          if (subflows_[i].xpass_->command (argc, argv) != TCL_OK)
+        }
+      }
+      else
+      {
+        for (int i = 0; i < sub_num_; i++)
+        {
+          if (subflows_[i].xpass_->command(argc, argv) != TCL_OK)
             return (TCL_ERROR);
         }
       }
       return (TCL_OK);
     }
 
-    if (strcmp (argv[1], "reset") == 0) {
+    if (strcmp(argv[1], "reset") == 0)
+    {
       /* reset used flag information */
       bool used_dst[dst_num_];
-      for (int j = 0; j < dst_num_; j++) used_dst[j] = false;
-      for (int i = 0; i < sub_num_; i++) {
-        for (int j = 0; j < dst_num_; j++) {
+      for (int j = 0; j < dst_num_; j++)
+        used_dst[j] = false;
+      for (int i = 0; i < sub_num_; i++)
+      {
+        for (int j = 0; j < dst_num_; j++)
+        {
           /* if this destination is already used by other subflow, don't use it */
-          if (used_dst[j]) continue;
-          if (check_routable (i, dsts_[j].addr_, dsts_[j].port_)) {
+          if (used_dst[j])
+            continue;
+          if (check_routable(i, dsts_[j].addr_, dsts_[j].port_))
+          {
             subflows_[i].daddr_ = dsts_[j].addr_;
             subflows_[i].dport_ = dsts_[j].port_;
-            if (is_xpass == false){
-              subflows_[i].tcp_->daddr () = dsts_[j].addr_;
-              subflows_[i].tcp_->dport () = dsts_[j].port_;
-            } else if (is_xpass == true ) {
-              subflows_[i].xpass_->daddr () = dsts_[j].addr_;
-              subflows_[i].xpass_->dport () = dsts_[j].port_;
+            if (is_xpass == false)
+            {
+              subflows_[i].tcp_->daddr() = dsts_[j].addr_;
+              subflows_[i].tcp_->dport() = dsts_[j].port_;
             }
-            used_dst[j] = true; 
+            else if (is_xpass == true)
+            {
+              subflows_[i].xpass_->daddr() = dsts_[j].addr_;
+              subflows_[i].xpass_->dport() = dsts_[j].port_;
+            }
+            used_dst[j] = true;
             break;
           }
         }
       }
-      if(is_xpass == false)
-        subflows_[0].tcp_->mptcp_set_primary ();
+      if (is_xpass == false)
+        subflows_[0].tcp_->mptcp_set_primary();
       return (TCL_OK);
     }
   }
-  if (argc == 3) {
-    if (strcmp (argv[1], "attach-tcp") == 0) {
-      int id = get_subnum ();
-      subflows_[id].tcp_ = (MpFullTcpAgent *) TclObject::lookup (argv[2]);
+  if (argc == 3)
+  {
+    if (strcmp(argv[1], "attach-tcp") == 0)
+    {
+      int id = get_subnum();
+      subflows_[id].tcp_ = (MpFullTcpAgent *)TclObject::lookup(argv[2]);
       subflows_[id].used = true;
-      subflows_[id].addr_ = subflows_[id].tcp_->addr ();
-      subflows_[id].port_ = subflows_[id].tcp_->port ();
-      subflows_[id].tcp_->mptcp_set_core (this);
+      subflows_[id].addr_ = subflows_[id].tcp_->addr();
+      subflows_[id].port_ = subflows_[id].tcp_->port();
+      subflows_[id].tcp_->mptcp_set_core(this);
       sub_num_++;
       return (TCL_OK);
     }
-    else if  (strcmp (argv[1], "attach-xpass") == 0) {
-      int id = get_subnum ();
-      subflows_[id].xpass_ = (XPassAgent *) TclObject::lookup (argv[2]);
+    else if (strcmp(argv[1], "attach-xpass") == 0)
+    {
+      int id = get_subnum();
+      subflows_[id].xpass_ = (XPassAgent *)TclObject::lookup(argv[2]);
       subflows_[id].used = true;
-      subflows_[id].is_xpass=true;
-      subflows_[id].addr_ = subflows_[id].xpass_->addr ();
-      subflows_[id].port_ = subflows_[id].xpass_->port ();
+      subflows_[id].is_xpass = true;
+      subflows_[id].addr_ = subflows_[id].xpass_->addr();
+      subflows_[id].port_ = subflows_[id].xpass_->port();
       //subflows_[id].tcp_->mptcp_set_core (this);
       sub_num_++;
-      is_xpass=true;
+      is_xpass = true;
       return (TCL_OK);
     }
-    else if (strcmp (argv[1], "set-multihome-core") == 0) {
-      core_ = (Classifier *) TclObject::lookup (argv[2]);
-      if (core_ == NULL) {
+    else if (strcmp(argv[1], "set-multihome-core") == 0)
+    {
+      core_ = (Classifier *)TclObject::lookup(argv[2]);
+      if (core_ == NULL)
+      {
         return (TCL_ERROR);
       }
       return (TCL_OK);
     }
 
-    else if (strcmp (argv[1], "send-msg") == 0) {
-      int msg_len = atoi (argv[2]);
-      if (msg_len <=0 ){
+    else if (strcmp(argv[1], "send-msg") == 0)
+    {
+      int msg_len = atoi(argv[2]);
+      if (msg_len <= 0)
+      {
         return (TCL_ERROR);
       }
       sendmsg(msg_len);
-      return(TCL_OK);
-    }
-  }
-  if (argc == 4) {
-    if (strcmp (argv[1], "add-multihome-destination") == 0) {
-      add_destination (atoi (argv[2]), atoi (argv[3]));
       return (TCL_OK);
     }
   }
-  if (argc == 6) {
-    if (strcmp (argv[1], "add-multihome-interface") == 0) {
+  if (argc == 4)
+  {
+    if (strcmp(argv[1], "add-multihome-destination") == 0)
+    {
+      add_destination(atoi(argv[2]), atoi(argv[3]));
+      return (TCL_OK);
+    }
+  }
+  if (argc == 6)
+  {
+    if (strcmp(argv[1], "add-multihome-interface") == 0)
+    {
       /* argv[2] indicates the addresses of the mptcp session */
 
       /* find the id for tcp bound to this address */
-      int id = find_subflow (atoi (argv[2]));
-      if (id < 0) {
-        fprintf (stderr, "cannot find tcp bound to interface addr [%s]",
-                 argv[2]);
+      int id = find_subflow(atoi(argv[2]));
+      if (id < 0)
+      {
+        fprintf(stderr, "cannot find tcp bound to interface addr [%s]",
+                argv[2]);
         return (TCL_ERROR);
       }
-      if(subflows_[id].is_xpass==false)
-        subflows_[id].tcp_->port () = atoi (argv[3]);
+      if (subflows_[id].is_xpass == false)
+        subflows_[id].tcp_->port() = atoi(argv[3]);
       else
-        subflows_[id].xpass_->port() = atoi (argv[3]);
-      subflows_[id].port_ = atoi (argv[3]);
-      subflows_[id].target_ = (NsObject *) TclObject::lookup (argv[4]);
-      subflows_[id].link_ = (NsObject *) TclObject::lookup (argv[5]);
+        subflows_[id].xpass_->port() = atoi(argv[3]);
+      subflows_[id].port_ = atoi(argv[3]);
+      subflows_[id].target_ = (NsObject *)TclObject::lookup(argv[4]);
+      subflows_[id].link_ = (NsObject *)TclObject::lookup(argv[5]);
       if (subflows_[id].target_ == NULL || subflows_[id].link_ == NULL)
         return (TCL_ERROR);
 
       return (TCL_OK);
     }
   }
-  return (Agent::command (argc, argv));
+  return (Agent::command(argc, argv));
 }
 
-int
-MptcpAgent::get_subnum ()
+int MptcpAgent::get_subnum()
 {
-  for (int i = 0; i < MAX_SUBFLOW; i++) {
+  for (int i = 0; i < MAX_SUBFLOW; i++)
+  {
     if (!subflows_[i].used)
       return i;
   }
   return -1;
 }
 
-int
-MptcpAgent::find_subflow (int addr, int port)
+int MptcpAgent::find_subflow(int addr, int port)
 {
-  for (int i = 0; i < MAX_SUBFLOW; i++) {
+  for (int i = 0; i < MAX_SUBFLOW; i++)
+  {
     if (subflows_[i].addr_ == addr && subflows_[i].port_ == port)
       return i;
   }
   return -1;
 }
 
-int
-MptcpAgent::find_subflow (int addr)
+int MptcpAgent::find_subflow(int addr)
 {
-  for (int i = 0; i < MAX_SUBFLOW; i++) {
+  for (int i = 0; i < MAX_SUBFLOW; i++)
+  {
     if (subflows_[i].addr_ == addr)
       return i;
   }
   return -1;
 }
 
-void
-MptcpAgent::recv (Packet * pkt, Handler * h)
+void MptcpAgent::recv(Packet *pkt, Handler *h)
 {
-  hdr_ip *iph = hdr_ip::access (pkt);
-  hdr_tcp *tcph = hdr_tcp::access (pkt);
+  hdr_ip *iph = hdr_ip::access(pkt);
+  hdr_tcp *tcph = hdr_tcp::access(pkt);
 
   /* find subflow id from the destination address */
-  int id = find_subflow (iph->daddr ());
-  if (id < 0) {
-    fprintf (stderr,
-             "MptcpAgent:recv() fatal error. cannot find destination\n");
-    abort ();
+  int id = find_subflow(iph->daddr());
+  if (id < 0)
+  {
+    fprintf(stderr,
+            "MptcpAgent:recv() fatal error. cannot find destination\n");
+    abort();
   }
-  if(is_xpass == false){
+  if (is_xpass == false)
+  {
     /* processing mptcp options */
-    if (tcph->mp_capable ()) {
+    if (tcph->mp_capable())
+    {
       /* if we receive mpcapable option, return the same option as response */
       subflows_[id].tcp_->mpcapable_ = true;
     }
-    if (tcph->mp_join ()) {
+    if (tcph->mp_join())
+    {
       /* if we receive mpjoin option, return the same option as response */
       subflows_[id].tcp_->mpjoin_ = true;
     }
-    if (tcph->mp_ack ()) {
+    if (tcph->mp_ack())
+    {
       /* when we receive mpack, erase the acked record */
-      subflows_[id].tcp_->mptcp_remove_mapping (tcph->mp_ack ());
+      subflows_[id].tcp_->mptcp_remove_mapping(tcph->mp_ack());
     }
 
-    if (tcph->mp_dsn ()) {
+    if (tcph->mp_dsn())
+    {
       /* when we receive mpdata, update new mapping */
       subflows_[id].tcp_->mpack_ = true;
-      subflows_[id].tcp_->mptcp_recv_add_mapping (tcph->mp_dsn (),
-                                                  tcph->mp_subseq (),
-                                                  tcph->mp_dsnlen ());
+      subflows_[id].tcp_->mptcp_recv_add_mapping(tcph->mp_dsn(),
+                                                 tcph->mp_subseq(),
+                                                 tcph->mp_dsnlen());
     }
   }
 
   /* make sure packet will be return to the src addr of the packet */
-  if(is_xpass == false){
-    subflows_[id].tcp_->daddr () = iph->saddr ();
-    subflows_[id].tcp_->dport () = iph->sport ();
-  } else {
-    subflows_[id].xpass_->daddr () = iph->saddr ();
-    subflows_[id].xpass_->dport () = iph->sport ();
+  if (is_xpass == false)
+  {
+    subflows_[id].tcp_->daddr() = iph->saddr();
+    subflows_[id].tcp_->dport() = iph->sport();
+  }
+  else
+  {
+    subflows_[id].xpass_->daddr() = iph->saddr();
+    subflows_[id].xpass_->dport() = iph->sport();
   }
   /* call subflow's recv function */
-  if(is_xpass == false)
-    subflows_[id].tcp_->recv (pkt, h);
-  else 
-    subflows_[id].xpass_->recv (pkt, h);
+  if (is_xpass == false)
+    subflows_[id].tcp_->recv(pkt, h);
+  else
+    subflows_[id].xpass_->recv(pkt, h);
 
-  if(is_xpass == false)  
-  send_control ();
+  if (is_xpass == false)
+    send_control();
 }
 
 /*
  * add possible destination address
  */
-void
-MptcpAgent::add_destination (int addr, int port)
+void MptcpAgent::add_destination(int addr, int port)
 {
-  for (int i = 0; i < MAX_SUBFLOW; i++) {
+  for (int i = 0; i < MAX_SUBFLOW; i++)
+  {
     if (dsts_[i].active_)
       continue;
     dsts_[i].addr_ = addr;
@@ -311,98 +345,110 @@ MptcpAgent::add_destination (int addr, int port)
     dst_num_++;
     return;
   }
-  fprintf (stderr, "fatal error. cannot add destination\n");
-  abort ();
+  fprintf(stderr, "fatal error. cannot add destination\n");
+  abort();
 }
 
 /*
  * check if this subflow can reach to the specified address
  */
-bool
-MptcpAgent::check_routable (int sid, int addr, int port)
+bool MptcpAgent::check_routable(int sid, int addr, int port)
 {
-  Packet *p = allocpkt ();
-  hdr_ip *iph = hdr_ip::access (p);
-  iph->daddr () = addr;
-  iph->dport () = port;
+  Packet *p = allocpkt();
+  hdr_ip *iph = hdr_ip::access(p);
+  iph->daddr() = addr;
+  iph->dport() = port;
   bool
-    result = (static_cast < Classifier * >
-              (subflows_[sid].target_)->classify (p) > 0) ? true : false;
-  Packet::free (p);
+      result = (static_cast<Classifier *>(subflows_[sid].target_)->classify(p) > 0) ? true : false;
+  Packet::free(p);
 
   return result;
 }
 
-void
-MptcpAgent::sendmsg (int nbytes, const char * /*flags */ )
+void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
 {
-  if (nbytes == -1) {
+  if (nbytes == -1)
+  {
     infinite_send_ = true;
     total_bytes_ = TCP_MAXSEQ;
-  } else
+  }
+  else
     total_bytes_ = nbytes;
+  if (!is_xpass)
+    send_control();
+  else
+    send_xpass();
+}
 
-  send_control ();
+void MptcpAgent::send_xpass()
+{ 
+  for(int i = 0; i<=sub_num_ ; i++)
+    subflow_[i].send(construct_credit_request(), 0);
 }
 
 /*
  * control sending data
  */
-void
-MptcpAgent::send_control ()
+void MptcpAgent::send_control()
 {
   printf("Send-msg called0000 \n");
-  if (total_bytes_ > 0 || infinite_send_) {
+  if (total_bytes_ > 0 || infinite_send_)
+  {
     /* one round */
     bool slow_start = false;
-    if(is_xpass == false){
-      for (int i = 0; i < sub_num_; i++) {
-        int mss = subflows_[i].tcp_->size ();
-        double cwnd = subflows_[i].tcp_->mptcp_get_cwnd () * mss;
-        int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh () * mss;
-        int maxseq = subflows_[i].tcp_->mptcp_get_maxseq ();
-        int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
-        int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack ();
-        int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
+    for (int i = 0; i < sub_num_; i++)
+    {
+      int mss = subflows_[i].tcp_->size();
+      double cwnd = subflows_[i].tcp_->mptcp_get_cwnd() * mss;
+      int ssthresh = subflows_[i].tcp_->mptcp_get_ssthresh() * mss;
+      int maxseq = subflows_[i].tcp_->mptcp_get_maxseq();
+      int backoff = subflows_[i].tcp_->mptcp_get_backoff();
+      int highest_ack = subflows_[i].tcp_->mptcp_get_highest_ack();
+      int dupacks = subflows_[i].tcp_->mptcp_get_numdupacks();
 
 #if 1
-        // we don't utlize a path which has lots of timeouts
-        if (backoff >= 4) continue;
+      // we don't utlize a path which has lots of timeouts
+      if (backoff >= 4)
+        continue;
 #endif
 
-        /* too naive logic to calculate outstanding bytes? */
-        int outstanding = maxseq - highest_ack - dupacks * mss;
-        if (outstanding <= 0) outstanding = 0;
-          if (cwnd < ssthresh) {
-            /* allow only one subflow to do slow start at the same time */
-            if (!slow_start) {
-              slow_start = true;
-              subflows_[i].tcp_->mptcp_set_slowstart (true);
-            }
-            else
+      /* too naive logic to calculate outstanding bytes? */
+      int outstanding = maxseq - highest_ack - dupacks * mss;
+      if (outstanding <= 0)
+        outstanding = 0;
+      if (cwnd < ssthresh)
+      {
+        /* allow only one subflow to do slow start at the same time */
+        if (!slow_start)
+        {
+          slow_start = true;
+          subflows_[i].tcp_->mptcp_set_slowstart(true);
+        }
+        else
 #if 0
               subflows_[i].tcp_->mptcp_set_slowstart (false);
 #else
-              /* allow to do slow-start simultaneously */
-              subflows_[i].tcp_->mptcp_set_slowstart (true);
+          /* allow to do slow-start simultaneously */
+          subflows_[i].tcp_->mptcp_set_slowstart(true);
 #endif
-        }
-        int sendbytes = cwnd - outstanding;
-        if (sendbytes < mss)
-          continue;
-        if (sendbytes > total_bytes_)
-          sendbytes = total_bytes_;
+      }
+      int sendbytes = cwnd - outstanding;
+      if (sendbytes < mss)
+        continue;
+      if (sendbytes > total_bytes_)
+        sendbytes = total_bytes_;
 
-        //if (sendbytes > mss) sendbytes = mss;
-        while(sendbytes >= mss) {
-          subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[i].tcp_->sendmsg (mss);
-          mcurseq_ += mss;
-          sendbytes -= mss;
-        }
+      //if (sendbytes > mss) sendbytes = mss;
+      while (sendbytes >= mss)
+      {
+        subflows_[i].tcp_->mptcp_add_mapping(mcurseq_, mss);
+        subflows_[i].tcp_->sendmsg(mss);
+        mcurseq_ += mss;
+        sendbytes -= mss;
+      }
 
-        if (!infinite_send_)
-          total_bytes_ -= sendbytes;
+      if (!infinite_send_)
+        total_bytes_ -= sendbytes;
 #if 0
             if (!slow_start) {
               double cwnd_i = subflows_[i].tcp_->mptcp_get_cwnd ();
@@ -416,22 +462,9 @@ MptcpAgent::send_control ()
               subflows_[i].tcp_->mptcp_set_last_cwnd (cwnd_i);
             }
 #endif
-      }
-    } else {
-      for (int i = 0; i < sub_num_; i++) {
-        //int mss = subflows_[i].xpass_->max_segment ();
-        //int sendbytes = total_bytes_;
-        //while(sendbytes >= mss) {
-          //subflows_[i].tcp_->mptcp_add_mapping (mcurseq_, mss);
-          subflows_[i].xpass_->advance_bytes( (int64_t) total_bytes_/2);
-          //mcurseq_ += mss;
-          //sendbytes -= mss;
-          //}
-          //if (!infinite_send_)
-          //total_bytes_ -= sendbytes;
-      }
     }
   }
+}
 }
 
 /*
@@ -451,26 +484,26 @@ MptcpAgent::send_control ()
 
  */
 
-void
-MptcpAgent::calculate_alpha ()
+void MptcpAgent::calculate_alpha()
 {
   double max_i = 0.001;
   double sum_i = 0;
   double totalcwnd = 0;
 
-  for (int i = 0; i < sub_num_; i++) {
+  for (int i = 0; i < sub_num_; i++)
+  {
 #if 1
-    int backoff = subflows_[i].tcp_->mptcp_get_backoff ();
+    int backoff = subflows_[i].tcp_->mptcp_get_backoff();
     // we don't utlize a path which has lots of timeouts
-    if (backoff >= 4) 
-       continue;
+    if (backoff >= 4)
+      continue;
 #endif
 
-    double rtt_i  = subflows_[i].tcp_->mptcp_get_srtt ();
-    double cwnd_i = subflows_[i].tcp_->mptcp_get_cwnd ();
+    double rtt_i = subflows_[i].tcp_->mptcp_get_srtt();
+    double cwnd_i = subflows_[i].tcp_->mptcp_get_cwnd();
 
     if (rtt_i < 0.000001) // too small. Let's not update alpha
-      return; 
+      return;
 
     double tmp_i = cwnd_i / (rtt_i * rtt_i);
     if (max_i < tmp_i)
@@ -488,18 +521,19 @@ MptcpAgent::calculate_alpha ()
 /*
  * create ack block based on data ack information
  */
-void
-MptcpAgent::set_dataack (int ackno, int length)
+void MptcpAgent::set_dataack(int ackno, int length)
 {
   bool found = false;
-  vector < dack_mapping >::iterator it = dackmap_.begin ();
+  vector<dack_mapping>::iterator it = dackmap_.begin();
 
-  while (it != dackmap_.end ()) {
+  while (it != dackmap_.end())
+  {
     struct dack_mapping *p = &*it;
 
     /* find matched block for this data */
     if (p->ackno <= ackno && p->ackno + p->length >= ackno &&
-        p->ackno + p->length < ackno + length) {
+        p->ackno + p->length < ackno + length)
+    {
       p->length = ackno + length - p->ackno;
       found = true;
       break;
@@ -509,19 +543,22 @@ MptcpAgent::set_dataack (int ackno, int length)
   }
 
   /* if there's no matching block, add new one */
-  if (!found) {
-    struct dack_mapping tmp_map = { ackno, length };
-    dackmap_.push_back (tmp_map);
+  if (!found)
+  {
+    struct dack_mapping tmp_map = {ackno, length};
+    dackmap_.push_back(tmp_map);
   }
 
   /* re-calculate cumlative ack and erase old records */
-  it = dackmap_.begin ();
-  while (it != dackmap_.end ()) {
+  it = dackmap_.begin();
+  while (it != dackmap_.end())
+  {
     struct dack_mapping *p = &*it;
     if (mackno_ >= p->ackno && mackno_ <= p->ackno + p->length)
       mackno_ = ackno + length;
-    if (mackno_ > p->ackno + p->length) {
-      it = dackmap_.erase (it);
+    if (mackno_ > p->ackno + p->length)
+    {
+      it = dackmap_.erase(it);
     }
     else
       ++it;

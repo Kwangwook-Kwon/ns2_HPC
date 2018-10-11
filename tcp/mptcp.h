@@ -112,6 +112,7 @@ protected:
   int find_subflow (int addr, int port);
   int find_subflow (int addr);
   void send_control ();
+  void send_xpass();
   void add_destination (int addr, int port);
   bool check_routable (int sid, int addr, int port);
 
