@@ -383,7 +383,7 @@ void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
 void MptcpAgent::send_xpass()
 {
   for (int i = 0; i <= sub_num_; i++)
-    subflows_[i].send(subflows_[i].construct_credit_request(), 0);
+    subflows_[i].xpass_->send_credit_request();
 }
 
 /*
@@ -464,7 +464,6 @@ void MptcpAgent::send_control()
 #endif
     }
   }
-}
 }
 
 /*

@@ -112,6 +112,7 @@ public:
   double avg_credit_size() { return (min_credit_size_ + max_credit_size_)/2.0; }
   void send_credit();
   void send_credit_stop();
+  void send_credit_request();
   void advance_bytes(seq_t nb);
 
 protected:
