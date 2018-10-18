@@ -248,7 +248,6 @@ void XPassAgent::recv_credit(Packet *pkt) {
 }
 
 void XPassAgent::recv_data(Packet *pkt) {
-  printf ("Data Recv !!! \n");
   hdr_xpass *xph = hdr_xpass::access(pkt);
   // distance between expected sequence number and actual sequence number.
   int distance = xph->credit_seq() - c_recv_next_;
@@ -530,8 +529,12 @@ void XPassAgent::advance_bytes(seq_t nb) {
   credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
 }
 
-void XPassAgent::send_credit_request(){
+void XPassAgent::send_credit_request(seq_t nb){
+    printf("credit_send\n");
+    curseq_ += nb;
     send(construct_credit_request(), 0);
+    sender_retransmit_timer_.sched(retransmit_timeout_);
+    credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
 }
 
 void XPassAgent::process_ack(Packet *pkt) {

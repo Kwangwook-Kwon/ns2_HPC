@@ -45,6 +45,6 @@ $ns attach-agent $node1 $agent1
 $ns connect $agent0 $agent1
 
 puts "Simulation started."
-$ns at 0.0 "$agent0 advance-bytes 1000000000"
+$ns at 0.0 "$agent0 advance-bytes 100000"
 $ns at 1.0 "finish"
 $ns run

@@ -271,6 +271,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
 {
   hdr_ip *iph = hdr_ip::access(pkt);
   hdr_tcp *tcph = hdr_tcp::access(pkt);
+  hdr_cmn *xpassh = hdr_cmn::access(pkt);
 
   /* find subflow id from the destination address */
   int id = find_subflow(iph->daddr());
@@ -321,12 +322,35 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
     subflows_[id].xpass_->dport() = iph->sport();
   }
   /* call subflow's recv function */
-  if (is_xpass == false)
+  if (!is_xpass)
     subflows_[id].tcp_->recv(pkt, h);
   else
-    subflows_[id].xpass_->recv(pkt, h);
+  {
+    switch (xpassh->ptype())
+    {
+    case PT_XPASS_CREDIT_REQUEST:
+      subflows_[id].xpass_->recv_credit_request(pkt);
+      printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
+      break;
+    case PT_XPASS_CREDIT:
+      subflows_[id].xpass_ -> recv_credit(pkt);
+      break;
+    case PT_XPASS_DATA:
+      subflows_[id].xpass_->recv_data(pkt);
+      break;
+    case PT_XPASS_CREDIT_STOP:
+      subflows_[id].xpass_->recv_credit_stop(pkt);
+      break;
+    case PT_XPASS_NACK:
+      subflows_[id].xpass_->recv_nack(pkt);
+      break;
+    default:
+      break;
+    }
+    Packet::free(pkt);
+  }
 
-  if (is_xpass == false)
+  if (!is_xpass)
     send_control();
 }
 
@@ -382,8 +406,8 @@ void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
 
 void MptcpAgent::send_xpass()
 {
-  for (int i = 0; i <= sub_num_; i++)
-    subflows_[i].xpass_->send_credit_request();
+  for (int i = 0; i < sub_num_; i++)
+    subflows_[i].xpass_->send_credit_request( (seq_t) total_bytes_);
 }
 
 /*

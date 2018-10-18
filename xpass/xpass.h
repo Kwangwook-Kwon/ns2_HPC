@@ -93,6 +93,7 @@ class XPassAgent: public Agent {
   friend class SenderRetransmitTimer;
   friend class ReceiverRetransmitTimer;
   friend class FCTTimer;
+  friend class MptcpAgent;
 public:
   XPassAgent(): Agent(PT_XPASS_DATA), credit_send_state_(XPASS_SEND_CLOSED),
                 credit_recv_state_(XPASS_RECV_CLOSED), last_credit_rate_update_(-0.0),
@@ -112,7 +113,7 @@ public:
   double avg_credit_size() { return (min_credit_size_ + max_credit_size_)/2.0; }
   void send_credit();
   void send_credit_stop();
-  void send_credit_request();
+  void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
 
 protected:

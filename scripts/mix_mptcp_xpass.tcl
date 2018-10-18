@@ -1,7 +1,9 @@
 set ns [new Simulator]
 
 # Configurations
-set ALPHA 0.5
+set linkBW 10Gb
+set linkLatency 10us
+set ALPHA 0.1
 set w_init 0.5
 set linkBW 10Gb
 set linkLatency 10us
@@ -58,16 +60,16 @@ set r1 [$ns node]
 set r2 [$ns node]
 $ns trace-all $nt
 
-$ns simplex-link $node0_0 $r1      10Mb 5ms DropTail
-$ns simplex-link $r1	  $node0_0  10Mb 5ms XPassDropTail
-$ns simplex-link $node1_0 $r1      10Mb 5ms DropTail
-$ns simplex-link $r1	  $node1_0 10Mb 5ms XPassDropTail
+$ns simplex-link $node0_0 $r1      $linkBW $linkLatency DropTail
+$ns simplex-link $r1	  $node0_0   $linkBW $linkLatency XPassDropTail
+$ns simplex-link $node1_0 $r1      $linkBW $linkLatency DropTail
+$ns simplex-link $r1	  $node1_0   $linkBW $linkLatency XPassDropTail
 
 
-$ns simplex-link $node0_1 $r2      10Mb 5ms DropTail
-$ns simplex-link $r2      $node0_1   10Mb 5ms XPassDropTail
-$ns simplex-link $node1_1 $r2      10Mb 5ms DropTail
-$ns simplex-link $r2      $node1_1 10Mb 5ms XPassDropTail
+$ns simplex-link $node0_1 $r2      $linkBW $linkLatency DropTail
+$ns simplex-link $r2      $node0_1 $linkBW $linkLatency XPassDropTail
+$ns simplex-link $node1_1 $r2      $linkBW $linkLatency DropTail
+$ns simplex-link $r2      $node1_1 $linkBW $linkLatency XPassDropTail
 
 
 
@@ -116,7 +118,7 @@ $mptcpsink listen
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 1000000"
+$ns at 0.0 "$mptcp send-msg 10"
 $ns at 3.0 "finish"
 $ns run
 
