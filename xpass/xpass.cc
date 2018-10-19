@@ -177,10 +177,15 @@ void XPassAgent::recv_credit_request(Packet *pkt) {
       init();
       if (xph->sendbuffer_ >= 40) {
         lalpha = alpha_;
+      } else if(xph -> sendbuffer_ == -1){
+        lalpha = alpha_;
       } else {
         lalpha = alpha_ * xph->sendbuffer_ / 40.0;
       } 
+      printf("lalpha : %d\n", lalpha );
+      printf("max_credit_rate : %f\n" , max_credit_rate_);
       cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
+      printf("cur_credit_rate: %f \n", cur_credit_rate_);
       fst_ = xph->credit_sent_time();
       // need to start to send credits.
       send_credit();
@@ -202,7 +207,7 @@ void XPassAgent::recv_credit(Packet *pkt) {
       last_credit_recv_update_ = now();
     case XPASS_RECV_CREDIT_RECEIVING:
       // send data
-      if (datalen_remaining() > 0) {
+      if (datalen_remaining() > 0 ) {
         send(construct_data(pkt), 0);
       }
  
@@ -228,6 +233,62 @@ void XPassAgent::recv_credit(Packet *pkt) {
         credit_recved_rtt_ = 0;
         last_credit_recv_update_ = now();
       }
+      break;
+    case XPASS_RECV_CREDIT_STOP_SENT:
+      if (datalen_remaining() > 0) {
+        send(construct_data(pkt), 0);
+      } else {
+        credit_wasted_++;
+      }
+      credit_recved_++;
+      break;
+    case XPASS_RECV_CLOSE_WAIT:
+      // accumulate credit count to check if credit stop has been delivered
+      credit_wasted_++;
+      break;
+    case XPASS_RECV_CLOSED:
+      credit_wasted_++;
+      break;
+  }
+}
+
+
+void XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_) {
+  credit_recved_rtt_++;
+  switch (credit_recv_state_) {
+    case XPASS_RECV_CREDIT_REQUEST_SENT:
+      sender_retransmit_timer_.force_cancel();
+      credit_recv_state_ = XPASS_RECV_CREDIT_RECEIVING;
+      // first sender RTT.
+      rtt_ = now() - rtt_;
+      last_credit_recv_update_ = now();
+    case XPASS_RECV_CREDIT_RECEIVING:
+      // send data
+     
+        send(construct_data(pkt), 0);
+
+      /*if (datalen_remaining() == 0) {
+        if (credit_stop_timer_.status() != TIMER_IDLE) {
+          fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
+          exit(1);
+        }
+        // Because ns2 does not allow sending two consecutive packets, 
+        // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+        credit_stop_timer_.sched(0);
+      } else if (now() - last_credit_recv_update_ >= rtt_) {
+        if (credit_recved_rtt_ >= (1 * pkt_remaining())) {
+          // Early credit stop
+          if (credit_stop_timer_.status() != TIMER_IDLE) {
+            fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
+            exit(1);
+          }
+          // Because ns2 does not allow sending two consecutive packets, 
+          // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+          credit_stop_timer_.sched(0);
+        }
+        credit_recved_rtt_ = 0;
+        last_credit_recv_update_ = now();
+      }*/
       break;
     case XPASS_RECV_CREDIT_STOP_SENT:
       if (datalen_remaining() > 0) {
@@ -479,28 +540,36 @@ Packet* XPassAgent::construct_nack(seq_t seq_no) {
 }
 
 void XPassAgent::send_credit() {
+  printf("test111\n");
   double avg_credit_size = (min_credit_size_ + max_credit_size_)/2.0;
   double delay;
-
+  printf("test222\n");
   credit_feedback_control();
-
+  printf("test333\n");
   // send credit.
   send(construct_credit(), 0);
-
+  printf("test444\n");
   // calculate delay for next credit transmission.
+  printf("avg_credit_size : %f \n ", avg_credit_size);
+  printf("cur_credit_rate_ : %d \n", cur_credit_rate_);
   delay = avg_credit_size / cur_credit_rate_;
   // add jitter
+    printf("test555\n");
   if (max_jitter_ > min_jitter_) {
+      printf("test666\n");
     double jitter = (double)rand()/(double)RAND_MAX;
     jitter = jitter * (max_jitter_ - min_jitter_) + min_jitter_;
+      printf("test777\n");
     // jitter is in the range between min_jitter_ and max_jitter_
     delay = delay*(1+jitter);
+      printf("test777\n");
   }else if (max_jitter_ < min_jitter_) {
     fprintf(stderr, "ERROR: max_jitter_ should be larger than min_jitter_");
     exit(1);
   }
-
+  printf("test888");
   send_credit_timer_.resched(delay);
+    printf("test999");
 }
 
 void XPassAgent::send_credit_stop() {
@@ -530,7 +599,6 @@ void XPassAgent::advance_bytes(seq_t nb) {
 }
 
 void XPassAgent::send_credit_request(seq_t nb){
-    printf("credit_send\n");
     curseq_ += nb;
     send(construct_credit_request(), 0);
     sender_retransmit_timer_.sched(retransmit_timeout_);

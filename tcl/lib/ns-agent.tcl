@@ -58,6 +58,9 @@ Agent instproc set args {
 		}
 		return
 	}
+	if([lindex $args 0] == "max_credit_rate_"){
+		puts "Here!!"
+	}
 	eval $self next $args
 }
 
