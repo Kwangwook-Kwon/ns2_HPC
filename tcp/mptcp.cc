@@ -333,9 +333,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
       break;
     case PT_XPASS_CREDIT:
-      total_bytes_ -= min(subflows_[id].xpass_ ->max_segment(),total_bytes_);
-      subflows_[id].xpass_ -> recv_credit_mpath(pkt , total_bytes_);
-      //subflows_[id].xpass_ -> recv_credit(pkt);
+      total_bytes_ -= subflows_[id].xpass_ -> recv_credit_mpath(pkt , total_bytes_);
       break;
     case PT_XPASS_DATA:
       subflows_[id].xpass_->recv_data(pkt);

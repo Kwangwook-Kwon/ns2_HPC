@@ -115,7 +115,7 @@ public:
   void send_credit_stop();
   void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
-  void recv_credit_mpath(Packet *pkt, int total_bytes_);
+  seq_t recv_credit_mpath(Packet *pkt, int total_bytes_);
 
 protected:
   virtual void delay_bind_init_all();

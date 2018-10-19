@@ -3,13 +3,13 @@ set ns [new Simulator]
 # Configurations
 set linkBW 10Gb
 set linkLatency 10us
-set ALPHA 0.1
+set ALPHA 1.0
 set w_init 0.5
 set linkBW 10Gb
 set linkLatency 10us
 set creditQueueCapacity [expr 84*10] ;# Bytes
 set dataQueueCapacity [expr 1538*100] ;# Bytes
-#set creditRate 64734895 ;# bytes/sec
+set creditRate 64734895 ;# bytes/sec
 
 
 # Output file
@@ -74,9 +74,10 @@ $ns simplex-link $r2      $node1_1 $linkBW $linkLatency XPassDropTail
 
 
 
-#Agent/XPass set max_credit_rate_ $creditRate
-#Agent/XPass set cur_credit_rate_ [expr $ALPHA*$creditRate]
-#Agent/XPass set w_ $w_init
+Agent/XPass set max_credit_rate_ $creditRate
+Agent/XPass set cur_credit_rate_ [expr $ALPHA*$creditRate]
+Agent/XPass set w_ $w_init
+Agent/XPass set alpha_ $ALPHA
 
 
 
@@ -92,6 +93,8 @@ $ns attach-agent $node0_0 $agent0
 $ns attach-agent $node0_1 $agent1
 $agent0 set max_credit_rate_ $creditRate
 $agent1 set max_credit_rate_ $creditRate
+$agent0 set alpha_  $ALPHA
+$agent1 set alpha_  $ALPHA
 $mptcp attach-xpass $agent0
 $mptcp attach-xpass $agent1
 $ns multihome-attach-agent $node0 $mptcp
@@ -110,6 +113,8 @@ $ns attach-agent $node1_0 $agent2
 $ns attach-agent $node1_1 $agent3
 $agent2 set max_credit_rate_ $creditRate
 $agent3 set max_credit_rate_ $creditRate
+$agent2 set alpha_  $ALPHA
+$agent3 set alpha_  $ALPHA
 
 $mptcpsink attach-xpass $agent2
 $mptcpsink attach-xpass $agent3
@@ -124,7 +129,7 @@ $mptcpsink listen
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 10"
+$ns at 0.0 "$mptcp send-msg 5000000000"
 $ns at 3.0 "finish"
 $ns run
 
