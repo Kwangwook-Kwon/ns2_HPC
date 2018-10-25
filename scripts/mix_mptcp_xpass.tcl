@@ -129,7 +129,7 @@ $mptcpsink listen
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 5000000000"
+$ns at 0.0 "$mptcp send-msg 20000"
 $ns at 3.0 "finish"
 $ns run
 

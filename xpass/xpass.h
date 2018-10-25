@@ -101,13 +101,14 @@ public:
                 send_credit_timer_(this), credit_stop_timer_(this), 
                 sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
-                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),
+                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),total_bytes_(0),
                 credit_recved_(0), wait_retransmission_(false),
                 credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);
   inline double now() { return Scheduler::instance().clock(); }
   seq_t datalen_remaining() { return (curseq_ - t_seqno_); }
+  seq_t mpath_pkt_remaining(){return ceil(total_bytes_/(double)max_segment());}
   int max_segment() { return (max_ethernet_size_ - xpass_hdr_size_); }
   int pkt_remaining() { return ceil(datalen_remaining()/(double)max_segment()); }
   double avg_credit_size() { return (min_credit_size_ + max_credit_size_)/2.0; }
@@ -191,6 +192,8 @@ protected:
   seq_t c_seqno_;
   // next credit sequence number expected
   seq_t c_recv_next_;
+  //Total send Bytes on Mpath agent
+  seq_t total_bytes_;
 
   // weighted-average round trip time
   double rtt_;

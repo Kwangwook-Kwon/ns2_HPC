@@ -223,6 +223,8 @@ void XPassAgent::recv_credit_request(Packet *pkt)
     {
       lalpha = alpha_ * xph->sendbuffer_ / 40.0;
     }
+    printf("sendbuffer : %d\n", xph->sendbuffer_);
+    printf("Curent lalpha : %f\n",lalpha);
     cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
     fst_ = xph->credit_sent_time();
     // need to start to send credits.
@@ -304,6 +306,7 @@ void XPassAgent::recv_credit(Packet *pkt)
 
 seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
 {
+  //printf("MAX Segment : %d \n", max_segment());
   seq_t send_datalen = min(max_segment(), total_bytes_);
   credit_recved_rtt_++;
   switch (credit_recv_state_)
@@ -317,7 +320,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
   case XPASS_RECV_CREDIT_RECEIVING:
     // send data
     if (send_datalen > 0)
-    { 
+    {
       curseq_ += send_datalen;
       send(construct_data(pkt), 0);
     }
@@ -501,7 +504,14 @@ Packet *XPassAgent::construct_credit_request()
 
   xph->credit_seq() = 0;
   xph->credit_sent_time_ = now();
-  xph->sendbuffer_ = pkt_remaining();
+  if (total_bytes_ > 0)
+  {
+    xph->sendbuffer_ = mpath_pkt_remaining();
+  }
+  else
+  {
+    xph->sendbuffer_ = pkt_remaining();
+  }
 
   // to measure rtt between credit request and first credit
   // for sender.
@@ -689,7 +699,7 @@ void XPassAgent::advance_bytes(seq_t nb)
 
 void XPassAgent::send_credit_request(seq_t nb)
 {
-  curseq_ += nb;
+  total_bytes_ += nb;
   send(construct_credit_request(), 0);
   sender_retransmit_timer_.sched(retransmit_timeout_);
   credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
