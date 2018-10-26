@@ -122,6 +122,7 @@ protected:
   int sub_num_;
   int dst_num_;
   int total_bytes_;
+  int remain_buffer_;
   int mcurseq_;
   int mackno_;
   int use_olia_;

@@ -49,7 +49,7 @@ public:
 class_mptcp;
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
-                           mcurseq_(1), mackno_(1), infinite_send_(false)
+                           mcurseq_(1), mackno_(1), infinite_send_(false),remain_buffer_(0)
 {
 }
 
@@ -271,7 +271,8 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
 {
   hdr_ip *iph = hdr_ip::access(pkt);
   hdr_tcp *tcph = hdr_tcp::access(pkt);
-  hdr_cmn *xpassh = hdr_cmn::access(pkt);
+  hdr_cmn *cmmh = hdr_cmn::access(pkt);
+  hdr_xpass *xph = hdr_xpass::access(pkt);
 
   /* find subflow id from the destination address */
   int id = find_subflow(iph->daddr());
@@ -326,16 +327,22 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
     subflows_[id].tcp_->recv(pkt, h);
   else
   {
-    switch (xpassh->ptype())
+    switch (cmmh->ptype())
     {
     case PT_XPASS_CREDIT_REQUEST:
       subflows_[id].xpass_->recv_credit_request(pkt);
+      if(!remain_buffer_)
+        remain_buffer_ = xph -> sendbuffer_;
       printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
       break;
     case PT_XPASS_CREDIT:
       total_bytes_ -= subflows_[id].xpass_ -> recv_credit_mpath(pkt , total_bytes_);
       break;
     case PT_XPASS_DATA:
+      remain_buffer_--;
+      if(remain_buffer_ < 0){
+        fprintf(stderr, "ERROR : Data has received over send size.\n");
+      }
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:

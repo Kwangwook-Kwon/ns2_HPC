@@ -2,7 +2,6 @@ set ns [new Simulator]
 
 # Configurations
 set linkBW 10Gb
-set linkLatency 10us
 set ALPHA 1.0
 set w_init 0.5
 set linkBW 10Gb
@@ -129,7 +128,7 @@ $mptcpsink listen
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 20000"
-$ns at 3.0 "finish"
+$ns at 0.0 "$mptcp send-msg 99000000"
+$ns at 10.0 "finish"
 $ns run
 
