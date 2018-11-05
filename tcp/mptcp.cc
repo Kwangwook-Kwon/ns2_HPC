@@ -44,21 +44,28 @@ public:
   {
     return (new MptcpAgent());
   }
+}class_mptcp;
+
+void MP_FCTTimer::expire(Event *)
+{
+  a_->handle_fct();
 }
 
-class_mptcp;
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
-                           fid_ (-1), dst_num_ (0)
+                           fid_ (-1), dst_num_ (0), fct_ (0), fst_ (0), fct_timer_ (this)
 {
 }
+
 
 void MptcpAgent::delay_bind_init_all()
 {
   Agent::delay_bind_init_all();
   delay_bind_init_one("use_olia_");
   delay_bind_init_one("fid_");
+  delay_bind_init_one("default_credit_stop_timeout_");
+
 }
 
 /* haven't implemented yet */
@@ -72,6 +79,10 @@ int MptcpAgent::delay_bind_dispatch(const char *varName,
   }
 
   if (delay_bind(varName, localName, "fid_", &fid_, tracer))
+  {
+    return TCL_OK;
+  }
+  if (delay_bind(varName, localName, "default_credit_stop_timeout_", &default_credit_stop_timeout_, tracer))
   {
     return TCL_OK;
   }
@@ -341,6 +352,9 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
     switch (cmmh->ptype())
     {
     case PT_XPASS_CREDIT_REQUEST:
+      if(fst_ == 0){
+        fst_ = xph -> credit_sent_time();
+      }
       subflows_[id].xpass_->recv_credit_request(pkt);
       if (!remain_buffer_)
         remain_buffer_ = xph->sendbuffer_;
@@ -351,6 +365,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       break;
     case PT_XPASS_DATA:
       remain_buffer_--;
+      flow_size_ += xph->data_length_;
       if (remain_buffer_ < 0)
       {
         fprintf(stderr, "ERROR : Data has received over send size.\n");
@@ -358,6 +373,10 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:
+      if(fct_ == 0){
+      fct_ = now() - fst_;
+      fct_timer_.sched(default_credit_stop_timeout_);
+      }
       subflows_[id].xpass_->recv_credit_stop(pkt);
       break;
     case PT_XPASS_NACK:
@@ -604,4 +623,13 @@ void MptcpAgent::set_dataack(int ackno, int length)
     else
       ++it;
   }
+}
+
+void MptcpAgent::handle_fct()
+{
+  FILE *fct_out = fopen("outputs/mpath_fct.out", "a");
+
+  fprintf(fct_out, "%d,%ld,%.10lf\n", fid_, flow_size_, fct_);
+  fclose(fct_out);
+  //credit_send_state_ = XPASS_SEND_CLOSED;
 }

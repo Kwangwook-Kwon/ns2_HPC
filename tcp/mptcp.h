@@ -38,6 +38,15 @@
 
 
 #define MAX_SUBFLOW 100
+class MptcpAgent;
+
+class MP_FCTTimer: public TimerHandler {
+public:
+  MP_FCTTimer(MptcpAgent *a): TimerHandler(), a_(a) { }
+protected:
+  virtual void expire(Event *);
+  MptcpAgent *a_;
+};
 
 struct subflow
 {
@@ -78,6 +87,7 @@ struct dack_mapping
 class MptcpAgent:public Agent
 {
   friend class XcpEndsys;
+  friend class MP_FCTTimer;
   virtual void sendmsg (int nbytes, const char *flags = 0);
 public:
     MptcpAgent ();
@@ -115,18 +125,26 @@ protected:
   void send_xpass();
   void add_destination (int addr, int port);
   bool check_routable (int sid, int addr, int port);
+  inline double now() { return Scheduler::instance().clock(); }
+  void handle_fct();
 
   Classifier *core_;
+  MP_FCTTimer fct_timer_;
+
   bool infinite_send_;
   bool is_xpass;
   int sub_num_;
   int dst_num_;
   int total_bytes_;
   int remain_buffer_;
+  int flow_size_;
   int mcurseq_;
   int mackno_;
   int use_olia_;
   int fid_;
+  double fst_;
+  double fct_;
+  double default_credit_stop_timeout_;
   double totalcwnd_;
   double alpha_;
   struct subflow subflows_[MAX_SUBFLOW];

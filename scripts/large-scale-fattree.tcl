@@ -255,9 +255,6 @@ proc sendBytes {} {
   global ns random_flow_size nextTime sender fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
   while {1} {
     set fsize [expr ceil([expr [$randomFlowSize value]])]
-        puts "============================="
-    puts $fsize
-    puts "============================="
     if {$fsize > 0} {
       break;
     }

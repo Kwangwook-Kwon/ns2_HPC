@@ -617,6 +617,7 @@ Packet *XPassAgent::construct_data(Packet *credit)
 
   xph->credit_sent_time() = credit_xph->credit_sent_time();
   xph->credit_seq() = credit_xph->credit_seq();
+  xph->data_length_ = datalen;
 
   t_seqno_ += datalen;
 

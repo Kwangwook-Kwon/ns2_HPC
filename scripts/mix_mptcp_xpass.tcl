@@ -5,7 +5,7 @@ set linkBW 10Gb
 set ALPHA 1.0
 set w_init 0.5
 set linkBW 10Gb
-set linkLatency 10us
+set linkLatency 100us
 set creditQueueCapacity [expr 84*10] ;# Bytes
 set dataQueueCapacity [expr 1538*100] ;# Bytes
 set creditRate 64734895 ;# bytes/sec
@@ -128,7 +128,7 @@ $mptcpsink listen
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 99000000"
+$ns at 0.0 "$mptcp send-msg 200000000"
 $ns at 10.0 "finish"
 $ns run
 

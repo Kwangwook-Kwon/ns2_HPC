@@ -32,6 +32,9 @@ struct hdr_xpass {
   // Credit sequence number
   seq_t credit_seq_;
 
+  //data length
+  int data_length_;
+
   // temp variables for test
   int sendbuffer_;
 
