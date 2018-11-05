@@ -126,6 +126,7 @@ protected:
   int mcurseq_;
   int mackno_;
   int use_olia_;
+  int fid_;
   double totalcwnd_;
   double alpha_;
   struct subflow subflows_[MAX_SUBFLOW];

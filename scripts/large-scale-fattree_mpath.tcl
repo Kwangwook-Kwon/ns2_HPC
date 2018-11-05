@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 100000
+set numFlow 10
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -227,54 +227,69 @@ for {set i 0} {$i < $numFlow} {incr i} {
 #    set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
+  set MpNode_sender($i) [$ns node]
+  set MpNode_receiver($i) [$ns node]
+  set mpath_sender_agent($i) [new Agent/MPTCP]
+  set mpath_receiver_agent($i) [new Agent/MPTCP]
+  $mpath_sender_agent($i) set fid_ $i
+  $mpath_receiver_agent($i) set fid_ $i
+  for {set j 0} {$j < $numCore} {incr j} {
+    set SubfNode_sender($i,$j)  [$ns node]
+    set SubfAgent_sender($i,$j) [new Agent/XPass]
+    $ns multihome-add-interface $MpNode_sender($i) $SubfNode_sender($i,$j) 
+    $ns duplex-link $SubfNode_sender($i,$j) $dcNode($src_nodeid) 10GB 0us DropTail
+  }
+  for {set j 0} {$j < $numCore} {incr j} {
+    set SubfNode_receiver($i,$j)  [$ns node]
+    set SubfAgent_receiver($i,$j) [new Agent/XPass]
+    $ns multihome-add-interface $MpNode_receiver($i) $SubfNode_receiver($i,$j) 
+    $ns duplex-link $SubfNode_receiver($i,$j) $dcNode($dst_nodeid) 10GB 0us DropTail
+  }
 
-  set sender($i) [new Agent/XPass]
-  set receiver($i) [new Agent/XPass]
+  for {set j 0} {$j < $numCore} {incr j} {
+  $SubfAgent_sender($i,$j) set fid_ $i
+  $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
+  $SubfAgent_receiver($i,$j) set fid_ $i
+  $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
 
-  $sender($i) set fid_ $i
-  $sender($i) set host_id_ $src_nodeid
-  $receiver($i) set fid_ $i
-  $receiver($i) set host_id_ $dst_nodeid
+  $ns attach-agent $SubfNode_sender($i,$j)  $SubfAgent_sender($i,$j) 
+  $ns attach-agent $SubfNode_receiver($i,$j) $SubfAgent_receiver($i,$j) 
+  $mpath_sender_agent($i) attach-xpass $SubfAgent_sender($i,$j) 
+  $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
+  }
+  $ns multihome-attach-agent $MpNode_sender($i) $mpath_sender_agent($i)
+  $ns multihome-attach-agent $MpNode_receiver($i) $mpath_receiver_agent($i)
+  $ns multihome-connect $mpath_sender_agent($i) $mpath_receiver_agent($i)
 
-  $ns attach-agent $dcNode($src_nodeid) $sender($i)
-  $ns attach-agent $dcNode($dst_nodeid) $receiver($i)
-
-  $ns connect $sender($i) $receiver($i)
-
-  $ns at $simEndTime "$sender($i) close"
-  $ns at $simEndTime "$receiver($i) close"
+  $ns at $simEndTime "$mpath_sender_agent($i) close"
+  $ns at $simEndTime "$mpath_receiver_agent($i) close"
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
+  puts $i
 }
 
 set nextTime $simStartTime
 set fidx 0
 
+
 proc sendBytes {} {
-  global ns random_flow_size nextTime sender fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
+  puts "test11111"
+  global ns random_flow_size nextTime mpath_sender_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
   while {1} {
     set fsize [expr ceil([expr [$randomFlowSize value]])]
-        puts "============================="
-    puts $fsize
-    puts "============================="
     if {$fsize > 0} {
       break;
     }
   }
-
   puts $flowfile "$nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
-  $ns at $nextTime "$sender($fidx) advance-bytes $fsize"
-
+  $ns at $nextTime "$mpath_sender_agent($fidx) send-msg $fsize"
   set nextTime [expr $nextTime+[$randomFlowInterval value]]
   set fidx [expr $fidx+1]
-
   if {$fidx < $numFlow} {
     $ns at $nextTime "sendBytes"
   }
   puts $nextTime
-  puts " "
-  puts " "
 }
 
 $ns at 0.0 "puts \"Simulation starts!\""

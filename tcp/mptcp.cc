@@ -49,7 +49,8 @@ public:
 class_mptcp;
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
-                           mcurseq_(1), mackno_(1), infinite_send_(false),remain_buffer_(0)
+                           mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
+                           fid_ (-1), dst_num_ (0)
 {
 }
 
@@ -57,6 +58,7 @@ void MptcpAgent::delay_bind_init_all()
 {
   Agent::delay_bind_init_all();
   delay_bind_init_one("use_olia_");
+  delay_bind_init_one("fid_");
 }
 
 /* haven't implemented yet */
@@ -65,7 +67,15 @@ int MptcpAgent::delay_bind_dispatch(const char *varName,
                                     TclObject *tracer)
 {
   if (delay_bind_bool(varName, localName, "use_olia_", &use_olia_, tracer))
+  {
     return TCL_OK;
+  }
+
+  if (delay_bind(varName, localName, "fid_", &fid_, tracer))
+  {
+    return TCL_OK;
+  }
+
   return Agent::delay_bind_dispatch(varName, localName, tracer);
 }
 
@@ -190,6 +200,7 @@ int MptcpAgent::command(int argc, const char *const *argv)
 
     else if (strcmp(argv[1], "send-msg") == 0)
     {
+      printf("send-msg called fid: %d !!!\n", fid_);
       int msg_len = atoi(argv[2]);
       if (msg_len <= 0)
       {
@@ -331,16 +342,17 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
     {
     case PT_XPASS_CREDIT_REQUEST:
       subflows_[id].xpass_->recv_credit_request(pkt);
-      if(!remain_buffer_)
-        remain_buffer_ = xph -> sendbuffer_;
+      if (!remain_buffer_)
+        remain_buffer_ = xph->sendbuffer_;
       printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
       break;
     case PT_XPASS_CREDIT:
-      total_bytes_ -= subflows_[id].xpass_ -> recv_credit_mpath(pkt , total_bytes_);
+      total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
       break;
     case PT_XPASS_DATA:
       remain_buffer_--;
-      if(remain_buffer_ < 0){
+      if (remain_buffer_ < 0)
+      {
         fprintf(stderr, "ERROR : Data has received over send size.\n");
       }
       subflows_[id].xpass_->recv_data(pkt);
@@ -414,7 +426,7 @@ void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
 void MptcpAgent::send_xpass()
 {
   for (int i = 0; i < sub_num_; i++)
-    subflows_[i].xpass_->send_credit_request( (seq_t) total_bytes_);
+    subflows_[i].xpass_->send_credit_request((seq_t)total_bytes_);
 }
 
 /*
@@ -422,7 +434,6 @@ void MptcpAgent::send_xpass()
  */
 void MptcpAgent::send_control()
 {
-  printf("Send-msg called0000 \n");
   if (total_bytes_ > 0 || infinite_send_)
   {
     /* one round */
