@@ -52,28 +52,35 @@ static const char rcsid[] =
 #include "classifier.h"
 #include "ip.h"
 
-static int slotcmp (const void *a, const void *b) {
+static int slotcmp(const void *a, const void *b)
+{
   return (int)(*(unsigned int *)a - *(unsigned int *)b);
 }
 
-class MultiPathForwarder : public Classifier {
+class MultiPathForwarder : public Classifier
+{
 public:
-  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1) {
+  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1)
+  {
     bind("nodetype_", &nodetype_);
     bind_bool("symmetric_", &symmetric_);
-  } 
-	virtual int classify(Packet* p) {
-		int cl;
-    if (symmetric_) {
+  }
+  virtual int classify(Packet *p)
+  {
+    int cl;
+    if (symmetric_)
+    {
       // If there exists at least one slot and
       // not yet sorted
-      if (sorted_maxslot_ == -1 || maxslot_ > sorted_maxslot_) {
-        qsort (slot_, maxslot_+1, sizeof(NsObject*), slotcmp);
+      if (sorted_maxslot_ == -1 || maxslot_ > sorted_maxslot_)
+      {
+        qsort(slot_, maxslot_ + 1, sizeof(NsObject *), slotcmp);
         sorted_maxslot_ = maxslot_;
       }
-      hdr_ip* iph = hdr_ip::access(p);
+      hdr_ip *iph = hdr_ip::access(p);
 
-      struct hkey {
+      struct hkey
+      {
         int fid;
         int nodetype;
         nsaddr_t lower_addr, higher_addr;
@@ -81,7 +88,7 @@ public:
       struct hkey buf_;
       nsaddr_t src = mshift(iph->saddr());
       nsaddr_t dst = mshift(iph->daddr());
-      int* bufInteger;
+      int *bufInteger;
       int bufLength;
       unsigned int ms_;
 
@@ -90,27 +97,49 @@ public:
       buf_.higher_addr = (src > dst) ? src : dst;
       buf_.fid = iph->flowid();
 
-      bufInteger = (int*) &buf_;
-      bufLength = sizeof(hkey)/sizeof(int);
+      bufInteger = (int *)&buf_;
+      bufLength = sizeof(hkey) / sizeof(int);
 
       ms_ = (unsigned int)HashString(bufInteger, bufLength);
       ms_ %= (maxslot_ + 1);
       unsigned int fail = ms_;
-      do {
+      do
+      {
         cl = ms_++;
         ms_ %= (maxslot_ + 1);
       } while (slot_[cl] == 0 && ms_ != fail);
-    } else {
-		  int fail = ns_;
-		  do {
-		  	cl = ns_++;
-		  	ns_ %= (maxslot_ + 1);
-		  } while (slot_[cl] == 0 && ns_ != fail);
+    }
+    else if (perflow_)
+    {
+      hdr_ip *h = hdr_ip::access(p);
+      /* prio is used to implement FlowBender */
+      int ms_ = (h->dst().addr_ /*>> (32 - h->ttl()) + h->prio()*/) % (maxslot_ + 1);
+      int fail = ms_;
+      do
+      {
+        cl = ms_++;
+        ms_ %= (maxslot_ + 1);
+      } while (slot_[cl] == 0 && ms_ != fail);
+      if (debug_)
+      {
+        printf("fid = %d, ttl = %d, prio = %d, ms_= %u, cl = %d, max_slot = %d, nodetype = %d, dst = %d\n",
+               h->flowid(), h->ttl(), h->prio(), ms_, cl, maxslot_,nodetype_, h->dst().addr_ );
+      }
+    }
+    else
+    {
+      int fail = ns_;
+      do
+      {
+        cl = ns_++;
+        ns_ %= (maxslot_ + 1);
+      } while (slot_[cl] == 0 && ns_ != fail);
     }
     return cl;
-	}
+  }
+
 private:
-	int ns_;
+  int ns_;
   // Symmetric Routing
   // "True" for symmetric routing,
   // "False" for asymmetric routing (default)
@@ -118,14 +147,18 @@ private:
 
   int nodetype_;
   int sorted_maxslot_;
+  int perflow_;
+  int debug_;
 
   static unsigned int
-  HashString(register const int *ints, int length) {
+  HashString(register const int *ints, int length)
+  {
     register unsigned int result;
     register int i;
 
     result = 0;
-    for (i = 0; i < length; i++) {
+    for (i = 0; i < length; i++)
+    {
       srand(*ints++);
       int ran = rand();
       result = result ^ ran;
@@ -136,10 +169,12 @@ private:
   }
 };
 
-static class MultiPathClass : public TclClass {
+static class MultiPathClass : public TclClass
+{
 public:
-	MultiPathClass() : TclClass("Classifier/MultiPath") {} 
-	TclObject* create(int, const char*const*) {
-		return (new MultiPathForwarder());
-	}
+  MultiPathClass() : TclClass("Classifier/MultiPath") {}
+  TclObject *create(int, const char *const *)
+  {
+    return (new MultiPathForwarder());
+  }
 } class_multipath;

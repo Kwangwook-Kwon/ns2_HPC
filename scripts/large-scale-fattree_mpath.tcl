@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 10
+set numFlow 1
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -50,7 +50,7 @@ set creditBW [expr int($creditBW)]
 # Simulation setup
 #
 set simStartTime 0.1
-set simEndTime 60
+set simEndTime 0.2
 
 # Output file
 file mkdir "outputs"
@@ -72,7 +72,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
 Agent/XPass set min_credit_size_ $minCreditSize
@@ -96,7 +96,9 @@ DelayLink set avoidReordering_ true
 $ns rtproto DV
 Agent/rtProto/DV set advertInterval 10
 Node set multiPath_ 1
-Classifier/MultiPath set symmetric_ true
+Classifier/MultiPath set perflow_ true
+Classifier/MultiPath set debug_ true
+Classifier/MultiPath set symmetric_ false
 Classifier/MultiPath set nodetype_ 0
 
 # Workloads setting
@@ -220,15 +222,20 @@ for {set i 0} {$i < $numNode} {incr i} {
 
 puts "Creating agents and flows..."
 for {set i 0} {$i < $numFlow} {incr i} {
-  set src_nodeid [expr int([$randomSrcNodeId value])]
-  set dst_nodeid [expr int([$randomDstNodeId value])]
-
+  #set src_nodeid [expr int([$randomSrcNodeId value])]
+  #set dst_nodeid [expr int([$randomDstNodeId value])]
+  set src_nodeid 1
+  set dst_nodeid 150
   while {$src_nodeid == $dst_nodeid} {
-#    set src_nodeid [expr int([$randomSrcNodeId value])]
+  # while {[expr abs($src_nodeid-$dst_nodeid)] > 6} 
+    set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
   set MpNode_sender($i) [$ns node]
   set MpNode_receiver($i) [$ns node]
+  $MpNode_sender($i) set nodetype_ 1
+  $MpNode_receiver($i) set nodetype_ 1
+
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
@@ -247,9 +254,9 @@ for {set i 0} {$i < $numFlow} {incr i} {
   }
 
   for {set j 0} {$j < $numCore} {incr j} {
-  $SubfAgent_sender($i,$j) set fid_ $i
+  $SubfAgent_sender($i,$j) set fid_ $j
   $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
-  $SubfAgent_receiver($i,$j) set fid_ $i
+  $SubfAgent_receiver($i,$j) set fid_ $j
   $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
 
   $ns attach-agent $SubfNode_sender($i,$j)  $SubfAgent_sender($i,$j) 
@@ -266,7 +273,35 @@ for {set i 0} {$i < $numFlow} {incr i} {
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
-  puts $i
+
+# add route....
+  set src_tor_index  [expr $src_nodeid/($numNode/$numTor)]
+  set dst_tor_index  [expr $dst_nodeid/($numNode/$numTor)]
+
+  set src_aggr_index  [expr $src_tor_index/2]
+  set dst_aggr_index  [expr $dst_tor_index/2]
+
+  #$dcNode($src_nodeid) get-module "Manual"] add-route-to-adj-node -default $dcTor($src_tor_index)
+  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node -default $dcAggr(0)
+  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node -default $dcNode($dst_nodeid)
+  #[$dcNode($dst_nodeid) get-module "Manual"] add-route-to-adj-node -default $SubfNode_receiver(0,0)
+  #for {set j 0} {$j < $numCore} {incr j} {
+  #$dcTor($src_tor_index) add-route [$SubfNode_sender($i,$j) node-addr] $dcNode($src_nodeid)
+  #$dcTor($dst_tor_index) add-route [$SubfNode_receiver($i,$j) node-addr] $dcNode($dst_nodeid)
+  #[$SubfNode_sender($i,$j) get-module "Manual"] add-route-to-adj-node -default $dcNode($src_nodeid)
+  #[$dcNode($dst_nodeid) get-module "Manual"] add-route-to-adj-node -default $SubfNode_receiver($i,$j)
+  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node $dcNode($dst_nodeid)
+  #$dcNode($src_nodeid) add-route [$SubfNode_receiver($i,$j) node-addr] $dcTor($src_tor_index)
+#  [$dcTor($src_tor_index) get-module "Manual"] add-route [$SubfNode_receiver($i,$j) node-addr] $SubfNode_receiver($i,$j)
+  #[$dcTor($dst_tor_index) get-module "Manual"] add-route-to-adj-node $dcNode($dst_nodeid)
+
+
+  #}
+
+  #[$dcTor($src_tor_index) get-module "Manual"] dump-routes
+
+  #if{ [expr abs($src_nodeid-$dst_nodeid)] > 6 }
+
 }
 
 set nextTime $simStartTime
@@ -274,7 +309,6 @@ set fidx 0
 
 
 proc sendBytes {} {
-  puts "test11111"
   global ns random_flow_size nextTime mpath_sender_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
   while {1} {
     set fsize [expr ceil([expr [$randomFlowSize value]])]

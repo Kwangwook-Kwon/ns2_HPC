@@ -1,4 +1,5 @@
 #include "xpass.h"
+#include "ip.h"
 #include "../tcp/template.h"
 
 int hdr_xpass::offset_;
@@ -495,6 +496,7 @@ Packet *XPassAgent::construct_credit_request()
   hdr_tcp *tcph = hdr_tcp::access(p);
   hdr_cmn *cmnh = hdr_cmn::access(p);
   hdr_xpass *xph = hdr_xpass::access(p);
+  hdr_ip *iph = hdr_ip::access(p);
 
   tcph->seqno() = t_seqno_;
   tcph->ackno() = recv_next_;
@@ -502,6 +504,8 @@ Packet *XPassAgent::construct_credit_request()
 
   cmnh->size() = min_ethernet_size_;
   cmnh->ptype() = PT_XPASS_CREDIT_REQUEST;
+
+  iph->prio() = fid_;
 
   xph->credit_seq() = 0;
   xph->credit_sent_time_ = now();
