@@ -227,7 +227,7 @@ void XPassAgent::recv_credit_request(Packet *pkt)
     printf("sendbuffer : %d\n", xph->sendbuffer_);
     printf("Curent lalpha : %f\n",lalpha);
     cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
-    fst_ = xph->credit_sent_time();
+    //fst_ = xph->credit_sent_time();
     // need to start to send credits.
     send_credit();
 
@@ -379,6 +379,10 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
 
 void XPassAgent::recv_data(Packet *pkt)
 {
+  if(fst_ == -1){
+    fst_ = now();
+  }
+  fct_ = now() - fst_;
   hdr_xpass *xph = hdr_xpass::access(pkt);
   // distance between expected sequence number and actual sequence number.
   int distance = xph->credit_seq() - c_recv_next_;
@@ -418,7 +422,7 @@ void XPassAgent::recv_nack(Packet *pkt)
 
 void XPassAgent::recv_credit_stop(Packet *pkt)
 {
-  fct_ = now() - fst_;
+  //fct_ = now() - fst_;
   fct_timer_.sched(default_credit_stop_timeout_);
   send_credit_timer_.force_cancel();
   credit_send_state_ = XPASS_SEND_CLOSE_WAIT;

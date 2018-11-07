@@ -105,7 +105,7 @@ public:
                 sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
                 c_seqno_(1), c_recv_next_(1), rtt_(-0.0),total_bytes_(0),
-                credit_recved_(0), wait_retransmission_(false),
+                credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
                 credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);

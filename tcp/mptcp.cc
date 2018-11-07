@@ -54,7 +54,7 @@ void MP_FCTTimer::expire(Event *)
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
-                           fid_ (-1), dst_num_ (0), fct_ (0), fst_ (0), fct_timer_ (this)
+                           fid_ (-1), dst_num_ (0), fct_ (-1), fst_ (-1), fct_timer_ (this)
 {
 }
 
@@ -352,9 +352,9 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
     switch (cmmh->ptype())
     {
     case PT_XPASS_CREDIT_REQUEST:
-      if(fst_ == 0){
-        fst_ = xph -> credit_sent_time();
-      }
+      //if(fst_ == 0){
+      //  fst_ = xph -> credit_sent_time();
+      //}
       subflows_[id].xpass_->recv_credit_request(pkt);
       if (!remain_buffer_)
         remain_buffer_ = xph->sendbuffer_;
@@ -364,7 +364,11 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
       break;
     case PT_XPASS_DATA:
+      if(fst_ == -1){
+        fst_ = now();
+      }
       remain_buffer_--;
+      fct_ = now() - fst_;
       flow_size_ += xph->data_length_;
       if (remain_buffer_ < 0)
       {
@@ -373,10 +377,8 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:
-      if(fct_ == 0){
-      fct_ = now() - fst_;
-      fct_timer_.sched(default_credit_stop_timeout_);
-      }
+      printf("STOP RECIEVED FID: %d",fid_);
+      fct_timer_.resched(default_credit_stop_timeout_);
       subflows_[id].xpass_->recv_credit_stop(pkt);
       break;
     case PT_XPASS_NACK:
