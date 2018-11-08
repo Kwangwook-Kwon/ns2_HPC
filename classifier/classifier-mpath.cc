@@ -104,7 +104,7 @@ public:
       //ms_ = (unsigned int)HashString(bufInteger, bufLength);
       ms_ = iph -> flowid();
       if(nodetype_ == 2){
-          ms_ = ms_/numCore_ +1;
+        ms_ = ms_/(numCore_/2);
       }else{ 
         ms_ %= (maxslot_ + 1);
       }
