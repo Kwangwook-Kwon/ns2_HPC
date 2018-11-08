@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 1
+set numFlow 10
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -192,6 +192,16 @@ for {set i 0} {$i < $numAggr} {incr i} {
 }
 
 for {set i 0} {$i < $numTor} {incr i} {
+  if {[expr $i%2]  == 1 } {
+    $ns simplex-link $dcTor($i) $dcAggr([expr $i-1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+    set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i-1])]
+    set queue_tor_aggr [$link_tor_aggr queue]
+    $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
+    $ns simplex-link $dcAggr([expr $i-1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+    set link_aggr_tor [$ns link $dcAggr([expr $i-1]) $dcTor($i)]
+    set queue_aggr_tor [$link_aggr_tor queue]
+    $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+  }
 
   $ns simplex-link $dcTor($i) $dcAggr($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
   set link_tor_aggr [$ns link $dcTor($i) $dcAggr($i)]
@@ -201,27 +211,17 @@ for {set i 0} {$i < $numTor} {incr i} {
   set link_aggr_tor [$ns link $dcAggr([expr $i]) $dcTor($i)]
   set queue_aggr_tor [$link_aggr_tor queue]
   $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+
   if {[expr $i%2]  == 0 } {
-  $ns simplex-link $dcTor($i) $dcAggr([expr $i+1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-  set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i+1])]
-  set queue_tor_aggr [$link_tor_aggr queue]
-  $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
-  $ns simplex-link $dcAggr([expr $i+1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-  set link_aggr_tor [$ns link $dcAggr([expr $i+1]) $dcTor($i)]
-  set queue_aggr_tor [$link_aggr_tor queue]
-  $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+    $ns simplex-link $dcTor($i) $dcAggr([expr $i+1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+    set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i+1])]
+    set queue_tor_aggr [$link_tor_aggr queue]
+    $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
+    $ns simplex-link $dcAggr([expr $i+1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+    set link_aggr_tor [$ns link $dcAggr([expr $i+1]) $dcTor($i)]
+    set queue_aggr_tor [$link_aggr_tor queue]
+    $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
   }
-   if {[expr $i%2]  == 1 } {
-  $ns simplex-link $dcTor($i) $dcAggr([expr $i-1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-  set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i-1])]
-  set queue_tor_aggr [$link_tor_aggr queue]
-  $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
-  $ns simplex-link $dcAggr([expr $i-1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-  set link_aggr_tor [$ns link $dcAggr([expr $i-1]) $dcTor($i)]
-  set queue_aggr_tor [$link_aggr_tor queue]
-  $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
-  }
-  
 }
 
 for {set i 0} {$i < $numNode} {incr i} {

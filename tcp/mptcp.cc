@@ -377,7 +377,6 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:
-      printf("STOP RECIEVED FID: %d",fid_);
       fct_timer_.resched(default_credit_stop_timeout_);
       subflows_[id].xpass_->recv_credit_stop(pkt);
       break;
