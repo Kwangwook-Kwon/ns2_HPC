@@ -60,10 +60,11 @@ static int slotcmp(const void *a, const void *b)
 class MultiPathForwarder : public Classifier
 {
 public:
-  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1)
+  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0);
   {
     bind("nodetype_", &nodetype_);
     bind_bool("symmetric_", &symmetric_);
+    bind("numCore_", &numCore_)
   }
   virtual int classify(Packet *p)
   {
@@ -100,9 +101,13 @@ public:
       bufInteger = (int *)&buf_;
       bufLength = sizeof(hkey) / sizeof(int);
 
-      ms_ = (unsigned int)HashString(bufInteger, bufLength);
-      //ms_ = (unsigned int)buf_.higher_addr;
-      ms_ %= (maxslot_ + 1);
+      //ms_ = (unsigned int)HashString(bufInteger, bufLength);
+      ms_ = h -> flowid();
+      if(nodetype_ == 2){
+          ms_ = ms_/numCore_ +1;
+      }else{ 
+        ms_ %= (maxslot_ + 1);
+      }
       unsigned int fail = ms_;
       do
       {
@@ -145,6 +150,7 @@ private:
   // "True" for symmetric routing,
   // "False" for asymmetric routing (default)
   int symmetric_;
+  int numCore_;
 
   int nodetype_;
   int sorted_maxslot_;

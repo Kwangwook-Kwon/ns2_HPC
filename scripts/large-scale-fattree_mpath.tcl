@@ -26,6 +26,9 @@ set numCore 8 ;# number of core switches
 set numAggr 32 ;# number of aggregator switches
 set numTor 32 ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
+set N $numCore;
+set K 0;
+
 
 #
 # XPass configurations
@@ -255,7 +258,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
   $mpath_receiver_agent($i) set fid_ $i
-  for {set j 0} {$j < [expr $numCore/2]} {incr j} {
+  for {set j 0} {$j < [expr $N} {incr j} {
     set SubfNode_sender($i,$j)  [$ns node]
     $ns rtproto Static $SubfNode_sender($i,$j)
     set SubfAgent_sender($i,$j) [new Agent/XPass]
@@ -264,7 +267,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
     $ns simplex-link $SubfNode_sender($i,$j) $dcNode($src_nodeid) 10GB 0us DropTail
     $ns simplex-link $dcNode($src_nodeid) $SubfNode_sender($i,$j) 10GB 0us DropTail
   }
-  for {set j 0} {$j < [expr $numCore/2]} {incr j} {
+  for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfNode_receiver($i,$j)  [$ns node]
     $ns rtproto Static $SubfNode_receiver($i,$j)
     set SubfAgent_receiver($i,$j) [new Agent/XPass]
@@ -274,7 +277,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
     $ns simplex-link $dcNode($dst_nodeid) $SubfNode_receiver($i,$j) 10GB 0us DropTail
   }
 
-  for {set j 0} {$j < $numCore/2} {incr j} {
+  for {set j 0} {$j < $N} {incr j} {
   $SubfAgent_sender($i,$j) set fid_ $j
   $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
   $SubfAgent_receiver($i,$j) set fid_ $j
