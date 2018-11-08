@@ -103,6 +103,7 @@ Classifier/MultiPath set perflow_ false
 Classifier/MultiPath set debug_ false
 Classifier/MultiPath set symmetric_ true
 Classifier/MultiPath set nodetype_ 0
+Classifier/MultiPath set numCore_ $numCore
 
 # Workloads setting
 if {[string compare $workload "mining"] == 0} {
