@@ -60,11 +60,11 @@ static int slotcmp(const void *a, const void *b)
 class MultiPathForwarder : public Classifier
 {
 public:
-  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0);
+  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0)
   {
     bind("nodetype_", &nodetype_);
     bind_bool("symmetric_", &symmetric_);
-    bind("numCore_", &numCore_)
+    bind("numCore_", &numCore_);
   }
   virtual int classify(Packet *p)
   {
@@ -102,7 +102,7 @@ public:
       bufLength = sizeof(hkey) / sizeof(int);
 
       //ms_ = (unsigned int)HashString(bufInteger, bufLength);
-      ms_ = h -> flowid();
+      ms_ = iph -> flowid();
       if(nodetype_ == 2){
           ms_ = ms_/numCore_ +1;
       }else{ 

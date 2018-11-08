@@ -258,7 +258,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
   $mpath_receiver_agent($i) set fid_ $i
-  for {set j 0} {$j < [expr $N} {incr j} {
+  for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfNode_sender($i,$j)  [$ns node]
     $ns rtproto Static $SubfNode_sender($i,$j)
     set SubfAgent_sender($i,$j) [new Agent/XPass]
