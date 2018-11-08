@@ -100,7 +100,8 @@ public:
       bufInteger = (int *)&buf_;
       bufLength = sizeof(hkey) / sizeof(int);
 
-      ms_ = (unsigned int)HashString(bufInteger, bufLength);
+      //ms_ = (unsigned int)HashString(bufInteger, bufLength);
+      ms_ = (unsigned int)buf_.higher_addr + nodetype_;
       ms_ %= (maxslot_ + 1);
       unsigned int fail = ms_;
       do

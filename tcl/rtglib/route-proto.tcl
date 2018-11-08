@@ -720,7 +720,7 @@ Agent/rtProto/DV instproc recv-update {peerAddr id} {
 	    return
 	}
     }
-    error "$class::$proc update $peerAddr:$msg:$count from unknown peer"
+    #error "$class::$proc update $peerAddr:$msg:$count from unknown peer"
 }
 
 Agent/rtProto/DV proc compute-all {} {

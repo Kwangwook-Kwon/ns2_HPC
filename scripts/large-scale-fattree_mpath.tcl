@@ -23,9 +23,9 @@ set dataBufferFromAggrToTor [expr 250*1538] ;# bytes / port
 set dataBufferFromTorToHost [expr 250*1538] ;# bytes / port
 
 set numCore 8 ;# number of core switches
-set numAggr 16 ;# number of aggregator switches
+set numAggr 32 ;# number of aggregator switches
 set numTor 32 ;# number of ToR switches
-set numNode 192 ;# number of nodes
+set numNode [expr $numTor*5 ] ;# number of nodes
 
 #
 # XPass configurations
@@ -96,9 +96,9 @@ DelayLink set avoidReordering_ true
 $ns rtproto DV
 Agent/rtProto/DV set advertInterval 10
 Node set multiPath_ 1
-Classifier/MultiPath set perflow_ true
-Classifier/MultiPath set debug_ true
-Classifier/MultiPath set symmetric_ false
+Classifier/MultiPath set perflow_ false
+Classifier/MultiPath set debug_ false
+Classifier/MultiPath set symmetric_ true
 Classifier/MultiPath set nodetype_ 0
 
 # Workloads setting
@@ -157,21 +157,21 @@ $randomDstNodeId set max_ $numNode
 
 # Node
 puts "Creating nodes..."
-for {set i 0} {$i < $numNode} {incr i} {
-  set dcNode($i) [$ns node]
-  $dcNode($i) set nodetype_ 1
-}
-for {set i 0} {$i < $numTor} {incr i} {
-  set dcTor($i) [$ns node]
-  $dcTor($i) set nodetype_ 2
+for {set i 0} {$i < $numCore} {incr i} {
+  set dcCore($i) [$ns node]
+  $dcCore($i) set nodetype_ 4
 }
 for {set i 0} {$i < $numAggr} {incr i} {
   set dcAggr($i) [$ns node]
   $dcAggr($i) set nodetype_ 3
 }
-for {set i 0} {$i < $numCore} {incr i} {
-  set dcCore($i) [$ns node]
-  $dcCore($i) set nodetype_ 4
+for {set i 0} {$i < $numTor} {incr i} {
+  set dcTor($i) [$ns node]
+  $dcTor($i) set nodetype_ 2
+}
+for {set i 0} {$i < $numNode} {incr i} {
+  set dcNode($i) [$ns node]
+  $dcNode($i) set nodetype_ 1
 }
 
 # Link
@@ -192,18 +192,36 @@ for {set i 0} {$i < $numAggr} {incr i} {
 }
 
 for {set i 0} {$i < $numTor} {incr i} {
-  set aggrIndex [expr $i/4*2]
-  for {set j $aggrIndex} {$j <= $aggrIndex+1} {incr j} {
-    $ns simplex-link $dcTor($i) $dcAggr($j) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-    set link_tor_aggr [$ns link $dcTor($i) $dcAggr($j)]
-    set queue_tor_aggr [$link_tor_aggr queue]
-    $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
 
-    $ns simplex-link $dcAggr($j) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
-    set link_aggr_tor [$ns link $dcAggr($j) $dcTor($i)]
-    set queue_aggr_tor [$link_aggr_tor queue]
-    $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+  $ns simplex-link $dcTor($i) $dcAggr($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_tor_aggr [$ns link $dcTor($i) $dcAggr($i)]
+  set queue_tor_aggr [$link_tor_aggr queue]
+  $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
+  $ns simplex-link $dcAggr($i) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_aggr_tor [$ns link $dcAggr([expr $i]) $dcTor($i)]
+  set queue_aggr_tor [$link_aggr_tor queue]
+  $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+  if {[expr $i%2]  == 0 } {
+  $ns simplex-link $dcTor($i) $dcAggr([expr $i+1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i+1])]
+  set queue_tor_aggr [$link_tor_aggr queue]
+  $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
+  $ns simplex-link $dcAggr([expr $i+1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_aggr_tor [$ns link $dcAggr([expr $i+1]) $dcTor($i)]
+  set queue_aggr_tor [$link_aggr_tor queue]
+  $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
   }
+   if {[expr $i%2]  == 1 } {
+  $ns simplex-link $dcTor($i) $dcAggr([expr $i-1]) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_tor_aggr [$ns link $dcTor($i) $dcAggr([expr $i-1])]
+  set queue_tor_aggr [$link_tor_aggr queue]
+  $queue_tor_aggr set data_limit_ $dataBufferFromTorToAggr
+  $ns simplex-link $dcAggr([expr $i-1]) $dcTor($i) [set linkRate]Gb $linkDelayTorAggr XPassDropTail
+  set link_aggr_tor [$ns link $dcAggr([expr $i-1]) $dcTor($i)]
+  set queue_aggr_tor [$link_aggr_tor queue]
+  $queue_aggr_tor set data_limit_ $dataBufferFromAggrToTor
+  }
+  
 }
 
 for {set i 0} {$i < $numNode} {incr i} {
@@ -222,10 +240,8 @@ for {set i 0} {$i < $numNode} {incr i} {
 
 puts "Creating agents and flows..."
 for {set i 0} {$i < $numFlow} {incr i} {
-  #set src_nodeid [expr int([$randomSrcNodeId value])]
-  #set dst_nodeid [expr int([$randomDstNodeId value])]
-  set src_nodeid 1
-  set dst_nodeid 150
+  set src_nodeid [expr int([$randomSrcNodeId value])]
+  set dst_nodeid [expr int([$randomDstNodeId value])]
   while {$src_nodeid == $dst_nodeid} {
   # while {[expr abs($src_nodeid-$dst_nodeid)] > 6} 
     set src_nodeid [expr int([$randomSrcNodeId value])]
@@ -233,27 +249,32 @@ for {set i 0} {$i < $numFlow} {incr i} {
   }
   set MpNode_sender($i) [$ns node]
   set MpNode_receiver($i) [$ns node]
-  $MpNode_sender($i) set nodetype_ 1
-  $MpNode_receiver($i) set nodetype_ 1
-
+  $ns rtproto Static $MpNode_sender($i)
+  $ns rtproto Static $MpNode_receiver($i)
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
   $mpath_receiver_agent($i) set fid_ $i
-  for {set j 0} {$j < $numCore} {incr j} {
+  for {set j 0} {$j < [expr $numCore/2]} {incr j} {
     set SubfNode_sender($i,$j)  [$ns node]
+    $ns rtproto Static $SubfNode_sender($i,$j)
     set SubfAgent_sender($i,$j) [new Agent/XPass]
     $ns multihome-add-interface $MpNode_sender($i) $SubfNode_sender($i,$j) 
-    $ns duplex-link $SubfNode_sender($i,$j) $dcNode($src_nodeid) 10GB 0us DropTail
+
+    $ns simplex-link $SubfNode_sender($i,$j) $dcNode($src_nodeid) 10GB 0us DropTail
+    $ns simplex-link $dcNode($src_nodeid) $SubfNode_sender($i,$j) 10GB 0us DropTail
   }
-  for {set j 0} {$j < $numCore} {incr j} {
+  for {set j 0} {$j < [expr $numCore/2]} {incr j} {
     set SubfNode_receiver($i,$j)  [$ns node]
+    $ns rtproto Static $SubfNode_receiver($i,$j)
     set SubfAgent_receiver($i,$j) [new Agent/XPass]
     $ns multihome-add-interface $MpNode_receiver($i) $SubfNode_receiver($i,$j) 
-    $ns duplex-link $SubfNode_receiver($i,$j) $dcNode($dst_nodeid) 10GB 0us DropTail
+
+    $ns simplex-link $SubfNode_receiver($i,$j) $dcNode($dst_nodeid) 10GB 0us DropTail
+    $ns simplex-link $dcNode($dst_nodeid) $SubfNode_receiver($i,$j) 10GB 0us DropTail
   }
 
-  for {set j 0} {$j < $numCore} {incr j} {
+  for {set j 0} {$j < $numCore/2} {incr j} {
   $SubfAgent_sender($i,$j) set fid_ $j
   $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
   $SubfAgent_receiver($i,$j) set fid_ $j
@@ -274,35 +295,9 @@ for {set i 0} {$i < $numFlow} {incr i} {
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
 
-# add route....
-  set src_tor_index  [expr $src_nodeid/($numNode/$numTor)]
-  set dst_tor_index  [expr $dst_nodeid/($numNode/$numTor)]
-
-  set src_aggr_index  [expr $src_tor_index/2]
-  set dst_aggr_index  [expr $dst_tor_index/2]
-
-  #$dcNode($src_nodeid) get-module "Manual"] add-route-to-adj-node -default $dcTor($src_tor_index)
-  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node -default $dcAggr(0)
-  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node -default $dcNode($dst_nodeid)
-  #[$dcNode($dst_nodeid) get-module "Manual"] add-route-to-adj-node -default $SubfNode_receiver(0,0)
-  #for {set j 0} {$j < $numCore} {incr j} {
-  #$dcTor($src_tor_index) add-route [$SubfNode_sender($i,$j) node-addr] $dcNode($src_nodeid)
-  #$dcTor($dst_tor_index) add-route [$SubfNode_receiver($i,$j) node-addr] $dcNode($dst_nodeid)
-  #[$SubfNode_sender($i,$j) get-module "Manual"] add-route-to-adj-node -default $dcNode($src_nodeid)
-  #[$dcNode($dst_nodeid) get-module "Manual"] add-route-to-adj-node -default $SubfNode_receiver($i,$j)
-  #[$dcTor($src_tor_index) get-module "Manual"] add-route-to-adj-node $dcNode($dst_nodeid)
-  #$dcNode($src_nodeid) add-route [$SubfNode_receiver($i,$j) node-addr] $dcTor($src_tor_index)
-#  [$dcTor($src_tor_index) get-module "Manual"] add-route [$SubfNode_receiver($i,$j) node-addr] $SubfNode_receiver($i,$j)
-  #[$dcTor($dst_tor_index) get-module "Manual"] add-route-to-adj-node $dcNode($dst_nodeid)
-
-
-  #}
-
-  #[$dcTor($src_tor_index) get-module "Manual"] dump-routes
-
-  #if{ [expr abs($src_nodeid-$dst_nodeid)] > 6 }
 
 }
+puts $dcNode($dst_nodeid)
 
 set nextTime $simStartTime
 set fidx 0

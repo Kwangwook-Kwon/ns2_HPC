@@ -94,7 +94,7 @@ Queue/XPassDropTail set token_refresh_rate_ $creditBW
 
 DelayLink set avoidReordering_ true
 $ns rtproto DV
-Agent/rtProto/DV set advertInterval 10
+Agent/rtProto/DV set advertInterval 1000000000
 Node set multiPath_ 1
 Classifier/MultiPath set symmetric_ true
 Classifier/MultiPath set nodetype_ 0
