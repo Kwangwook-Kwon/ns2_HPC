@@ -57,13 +57,16 @@ set simEndTime 0.2
 
 # Output file
 file mkdir "outputs"
+set mpath_fct [open "outputs/mp_fct.out" w]
 set nt [open "outputs/trace.out" w]
 set fct_out [open "outputs/fct.out" w]
 set wst_out [open "outputs/waste.out" w]
 puts $fct_out "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
+puts $mpath_fct "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $wst_out "Flow ID,Flow Size (bytes),Wasted Credit"
 close $fct_out
 close $wst_out
+close $mpath_fct
 
 set flowfile [open flowfile.tr w]
 
