@@ -10,6 +10,8 @@ set creditQueueCapacity [expr 84*10] ;# Bytes
 set dataQueueCapacity [expr 1538*100] ;# Bytes
 set creditRate 64734895 ;# bytes/sec
 
+Agent/MPTCP set K 1
+
 
 # Output file
 file mkdir "outputs"
@@ -120,15 +122,13 @@ $mptcpsink attach-xpass $agent3
 
 $ns multihome-attach-agent $node1 $mptcpsink
 $ns multihome-connect $mptcp $mptcpsink
-#$ns connect $agent0 $agent2
-#$ns connect $agent1 $agent3
 $mptcpsink listen
 
 
 
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 200000000"
+$ns at 0.0 "$mptcp send-msg 2000000000"
 $ns at 10.0 "finish"
 $ns run
 

@@ -54,7 +54,8 @@ void MP_FCTTimer::expire(Event *)
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
-                           fid_ (-1), dst_num_ (0), fct_ (-1), fst_ (-1), fct_timer_ (this)
+                           fid_ (-1), dst_num_ (0), fct_ (-1), fst_ (-1), fct_timer_ (this), 
+                           K(100), act_sub_num_(0)
 {
 }
 
@@ -65,6 +66,8 @@ void MptcpAgent::delay_bind_init_all()
   delay_bind_init_one("use_olia_");
   delay_bind_init_one("fid_");
   delay_bind_init_one("default_credit_stop_timeout_");
+  delay_bind_init_one("K");
+
 
 }
 
@@ -86,7 +89,10 @@ int MptcpAgent::delay_bind_dispatch(const char *varName,
   {
     return TCL_OK;
   }
-
+  if (delay_bind(varName, localName, "K", &K, tracer))
+  {
+    return TCL_OK;
+  }
   return Agent::delay_bind_dispatch(varName, localName, tracer);
 }
 
@@ -211,7 +217,7 @@ int MptcpAgent::command(int argc, const char *const *argv)
 
     else if (strcmp(argv[1], "send-msg") == 0)
     {
-      printf("send-msg called fid: %d !!!\n", fid_);
+      //printf("send-msg called fid: %d !!!\n", fid_);
       int msg_len = atoi(argv[2]);
       if (msg_len <= 0)
       {
@@ -358,26 +364,41 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       subflows_[id].xpass_->recv_credit_request(pkt);
       if (!remain_buffer_)
         remain_buffer_ = xph->sendbuffer_;
-      printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
       break;
     case PT_XPASS_CREDIT:
-      total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
+      if(subflows_[id].is_active){
+        total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
+      }
+      else if(act_sub_num_ >= K ){
+        //printf("Subflow %d is de-ativated\n", id);
+        if(subflows_[id].xpass_ -> credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT)
+          subflows_[id].xpass_->send_credit_stop();
+        break;
+      }
+      else{
+        //printf("Subflow %d is ativated\n", id);
+        act_sub_num_++;
+        subflows_[id].is_active = true;
+        total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
+      }
       break;
     case PT_XPASS_DATA:
       if(fst_ == -1){
         fst_ = now();
       }
       remain_buffer_--;
-      fct_ = now() - fst_;
       flow_size_ += xph->data_length_;
       if (remain_buffer_ < 0)
       {
         fprintf(stderr, "ERROR : Data has received over send size.\n");
       }
+      if(remain_buffer_ == 0){
+        fct_ = now() - fst_;
+        handle_fct();
+      }
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:
-      fct_timer_.resched(default_credit_stop_timeout_);
       subflows_[id].xpass_->recv_credit_stop(pkt);
       break;
     case PT_XPASS_NACK:

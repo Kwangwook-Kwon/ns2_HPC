@@ -72,7 +72,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
 Agent/XPass set min_credit_size_ $minCreditSize
@@ -93,11 +93,11 @@ Queue/XPassDropTail set max_tokens_ $maxCreditBurst
 Queue/XPassDropTail set token_refresh_rate_ $creditBW
 
 DelayLink set avoidReordering_ true
-$ns rtproto DV
-Agent/rtProto/DV set advertInterval 1000000000
-Node set multiPath_ 1
-Classifier/MultiPath set symmetric_ true
-Classifier/MultiPath set nodetype_ 0
+$ns rtproto Static
+#Agent/rtProto/DV set advertInterval 1000000000
+#Node set multiPath_ 1
+#Classifier/MultiPath set symmetric_ true
+#Classifier/MultiPath set nodetype_ 0
 
 # Workloads setting
 if {[string compare $workload "mining"] == 0} {

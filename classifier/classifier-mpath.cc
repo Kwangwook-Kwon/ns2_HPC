@@ -60,16 +60,44 @@ static int slotcmp(const void *a, const void *b)
 class MultiPathForwarder : public Classifier
 {
 public:
-  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0)
+  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0), ecmp_(0)
   {
     bind("nodetype_", &nodetype_);
     bind_bool("symmetric_", &symmetric_);
     bind("numCore_", &numCore_);
+    bind("ecmp_", &ecmp_);
+
   }
   virtual int classify(Packet *p)
   {
     int cl;
-    if (symmetric_)
+    if (ecmp_)
+    {
+      // If there exists at least one slot and
+      // not yet sorted
+      if (sorted_maxslot_ == -1 || maxslot_ > sorted_maxslot_)
+      {
+        qsort(slot_, maxslot_ + 1, sizeof(NsObject *), slotcmp);
+        sorted_maxslot_ = maxslot_;
+      }
+      hdr_ip *iph = hdr_ip::access(p);
+      
+      unsigned int ms_;
+
+      ms_ = iph -> flowid();
+      if(nodetype_ == 2){
+        ms_ = ms_/(numCore_/2);
+      }else{ 
+        ms_ %= (maxslot_ + 1);
+      }
+      unsigned int fail = ms_;
+      do
+      {
+        cl = ms_++;
+        ms_ %= (maxslot_ + 1);
+      } while (slot_[cl] == 0 && ms_ != fail);
+    }
+    else if (symmetric_)
     {
       // If there exists at least one slot and
       // not yet sorted
@@ -101,8 +129,7 @@ public:
       bufInteger = (int *)&buf_;
       bufLength = sizeof(hkey) / sizeof(int);
 
-      //ms_ = (unsigned int)HashString(bufInteger, bufLength);
-      ms_ = iph -> flowid();
+      ms_ = (unsigned int)HashString(bufInteger, bufLength);
       if(nodetype_ == 2){
         ms_ = ms_/(numCore_/2);
       }else{ 
@@ -150,6 +177,7 @@ private:
   // "True" for symmetric routing,
   // "False" for asymmetric routing (default)
   int symmetric_;
+  int ecmp_;
   int numCore_;
 
   int nodetype_;

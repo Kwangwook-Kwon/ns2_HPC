@@ -397,8 +397,10 @@ Classifier/Addr/MPLS set data_driven_ 0
 
 # Multipath Classifier
 Classifier/MultiPath set symmetric_ false
+Classifier/MultiPath set ecmp_ false
 Classifier/MultiPath set nodetype_ 0
 Classifier/MultiPath set numCore_ 0;
+
 
 #
 # FEC models
@@ -1619,3 +1621,4 @@ Agent/XPass set max_jitter_ 0.1
 
 Agent/MPTCP set default_credit_stop_timeout_ 0.01
 Agent/MPTCP set use_olia_ 0;
+Agent/MPTCP set K 100;

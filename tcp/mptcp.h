@@ -51,11 +51,12 @@ protected:
 struct subflow
 {
   subflow ():used (false), is_xpass(false), addr_ (0), port_ (0), daddr_ (-1), dport_ (-1),
-    link_ (NULL), target_ (NULL), tcp_ (NULL), scwnd_ (0)
+    link_ (NULL), target_ (NULL), tcp_ (NULL), scwnd_ (0), is_active(false)
   {
   };
   bool used;
   bool is_xpass;
+  bool is_active;
   int addr_;
   int port_;
   int daddr_;
@@ -142,6 +143,8 @@ protected:
   int mackno_;
   int use_olia_;
   int fid_;
+  int K;
+  int act_sub_num_;
   double fst_;
   double fct_;
   double default_credit_stop_timeout_;

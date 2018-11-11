@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 10
+set numFlow 1
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -27,7 +27,7 @@ set numAggr 32 ;# number of aggregator switches
 set numTor 32 ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
 set N $numCore;
-set K 0;
+set K [expr $numCore/2];
 
 
 #
@@ -81,6 +81,8 @@ proc finish {} {
 $ns trace-all $nt
 
 # Basic parameter settings
+Agent/MPTCP set K $K
+
 Agent/XPass set min_credit_size_ $minCreditSize
 Agent/XPass set max_credit_size_ $maxCreditSize
 Agent/XPass set min_ethernet_size_ $minEthernetSize
@@ -102,9 +104,7 @@ DelayLink set avoidReordering_ true
 $ns rtproto DV
 Agent/rtProto/DV set advertInterval 10
 Node set multiPath_ 1
-Classifier/MultiPath set perflow_ false
-Classifier/MultiPath set debug_ false
-Classifier/MultiPath set symmetric_ true
+Classifier/MultiPath set ecmp_ true
 Classifier/MultiPath set nodetype_ 0
 Classifier/MultiPath set numCore_ $numCore
 

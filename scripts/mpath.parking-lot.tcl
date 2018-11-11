@@ -143,7 +143,8 @@ $mp_receiver($longest) set fid_ $longest
 puts "Simulation started."
 set nextTime 0.0
 for {set i 0} {$i < $N} {incr i} {
-  $ns at $nextTime "$mp_sender($i) send-msg 100000000"
+#  $ns at $nextTime "$mp_sender($i) send-msg 100000000"
+$ns at $nextTime "$mp_sender($i) send-msg 10000"
   set nextTime [expr $nextTime + $interFlowDelay]
 }
 

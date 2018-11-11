@@ -163,7 +163,7 @@ int XPassAgent::command(int argc, const char *const *argv)
   {
     if (strcmp(argv[1], "advance-bytes") == 0)
     {
-      printf("advance-bytes calld : %d \n", argv[2]);
+      //printf("advance-bytes calld : %d \n", argv[2]);
       if (credit_recv_state_ == XPASS_RECV_CLOSED)
       {
         advance_bytes(atol(argv[2]));
@@ -186,7 +186,7 @@ void XPassAgent::recv(Packet *pkt, Handler *)
   {
   case PT_XPASS_CREDIT_REQUEST:
     recv_credit_request(pkt);
-    printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
+    //printf("Packet Recieve :PT_XPASS_CREDIT_REQUEST \n");
     break;
   case PT_XPASS_CREDIT:
     recv_credit(pkt);
@@ -224,8 +224,8 @@ void XPassAgent::recv_credit_request(Packet *pkt)
     {
       lalpha = alpha_ * xph->sendbuffer_ / 40.0;
     }
-    printf("sendbuffer : %d\n", xph->sendbuffer_);
-    printf("Curent lalpha : %f\n",lalpha);
+    //printf("sendbuffer : %d\n", xph->sendbuffer_);
+    //printf("Curent lalpha : %f\n",lalpha);
     cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
     //fst_ = xph->credit_sent_time();
     // need to start to send credits.
@@ -691,7 +691,7 @@ void XPassAgent::send_credit_stop()
 
 void XPassAgent::advance_bytes(seq_t nb)
 {
-  printf("advance_bytes called\n");
+  //printf("advance_bytes called\n");
   if (credit_recv_state_ != XPASS_RECV_CLOSED)
   {
     fprintf(stderr, "ERROR: tried to advance_bytes without XPASS_RECV_CLOSED\n");
