@@ -130,11 +130,7 @@ public:
       bufLength = sizeof(hkey) / sizeof(int);
 
       ms_ = (unsigned int)HashString(bufInteger, bufLength);
-      if(nodetype_ == 2){
-        ms_ = ms_/(numCore_/2);
-      }else{ 
-        ms_ %= (maxslot_ + 1);
-      }
+      ms_ %= (maxslot_ + 1);
       unsigned int fail = ms_;
       do
       {
