@@ -60,7 +60,7 @@ static int slotcmp(const void *a, const void *b)
 class MultiPathForwarder : public Classifier
 {
 public:
-  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0), ecmp_(0)
+  MultiPathForwarder() : ns_(0), nodetype_(0), symmetric_(0), sorted_maxslot_(-1), numCore_(0), ecmp_(0), perflow_(0)
   {
     bind("nodetype_", &nodetype_);
     bind_bool("symmetric_", &symmetric_);

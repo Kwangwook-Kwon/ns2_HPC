@@ -104,7 +104,9 @@ DelayLink set avoidReordering_ true
 $ns rtproto DV
 Agent/rtProto/DV set advertInterval 10
 Node set multiPath_ 1
-Classifier/MultiPath set ecmp_ true
+Classifier/MultiPath set ecmp_ 1
+Classifier/MultiPath set symmetric_ 0
+Classifier/MultiPath set perflow_ 0
 Classifier/MultiPath set nodetype_ 0
 Classifier/MultiPath set numCore_ $numCore
 
