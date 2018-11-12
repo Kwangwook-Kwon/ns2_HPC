@@ -78,7 +78,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-$ns trace-all $nt
+#$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
@@ -256,7 +256,7 @@ for {set i 0} {$i < $numNode} {incr i} {
   }
 }
 
-puts "Creating agents and flows..."
+puts "Creating agents ..."
 for {set i 0} {$i < $numFlow} {incr i} {
   set src_nodeid [expr int([$randomSrcNodeId value])]
   set dst_nodeid [expr int([$randomDstNodeId value])]
@@ -292,15 +292,13 @@ for {set i 0} {$i < $numFlow} {incr i} {
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
-  puts $i
-
 }
 puts $dcNode($dst_nodeid)
 
 set nextTime $simStartTime
 set fidx 0
 
-
+puts "Creating flows..."
 proc sendBytes {} {
   global ns random_flow_size nextTime mpath_sender_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
   while {1} {

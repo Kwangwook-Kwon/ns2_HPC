@@ -649,7 +649,7 @@ void MptcpAgent::set_dataack(int ackno, int length)
 
 void MptcpAgent::handle_fct()
 {
-  FILE *fct_out = fopen("outputs/mpath_fct.out", "a");
+  FILE *fct_out = fopen("outputs/mp_fct.out", "a");
 
   fprintf(fct_out, "%d,%ld,%.10lf\n", fid_, flow_size_, fct_);
   fclose(fct_out);
