@@ -181,6 +181,13 @@ for {set i 0} {$i < $numNode} {incr i} {
   $dcNode($i) set nodetype_ 1
 }
 
+for {set i 0} {$i < $numNode} {incr i} {
+  for {set j 0} {$j < $numCore} {incr j} {
+    set dcSubNode($i,$j) [$ns node]
+    $dcSubNode($i,$j) set nodetype_ 1
+  }
+}
+
 # Link
 puts "Creating links..."
 for {set i 0} {$i < $numAggr} {incr i} {
@@ -231,18 +238,22 @@ for {set i 0} {$i < $numTor} {incr i} {
   }
 }
 
+
 for {set i 0} {$i < $numNode} {incr i} {
   set torIndex [expr $i/($numNode/$numTor)]
+  for {set j 0} {$j < $numCore} {incr j} {
+    $ns multihome-add-interface $dcNode($i) $dcSubNode($i,$j)
+      
+    $ns simplex-link $dcSubNode($i,$j) $dcTor($torIndex) [set linkRate]Gb [expr $linkDelayHostTor+$hostDelay] XPassDropTail
+    set link_host_tor [$ns link $dcSubNode($i,$j) $dcTor($torIndex)]
+    set queue_host_tor [$link_host_tor queue]
+    $queue_host_tor set data_limit_ $dataBufferHost
 
-  $ns simplex-link $dcNode($i) $dcTor($torIndex) [set linkRate]Gb [expr $linkDelayHostTor+$hostDelay] XPassDropTail
-  set link_host_tor [$ns link $dcNode($i) $dcTor($torIndex)]
-  set queue_host_tor [$link_host_tor queue]
-  $queue_host_tor set data_limit_ $dataBufferHost
-
-  $ns simplex-link $dcTor($torIndex) $dcNode($i) [set linkRate]Gb $linkDelayHostTor XPassDropTail
-  set link_tor_host [$ns link $dcTor($torIndex) $dcNode($i)]
-  set queue_tor_host [$link_tor_host queue]
-  $queue_tor_host set data_limit_ $dataBufferFromTorToHost
+    $ns simplex-link $dcTor($torIndex) $dcSubNode($i,$j) [set linkRate]Gb $linkDelayHostTor XPassDropTail
+    set link_tor_host [$ns link $dcTor($torIndex) $dcSubNode($i,$j)]
+    set queue_tor_host [$link_tor_host queue]
+    $queue_tor_host set data_limit_ $dataBufferFromTorToHost
+  }
 }
 
 puts "Creating agents and flows..."
@@ -250,50 +261,30 @@ for {set i 0} {$i < $numFlow} {incr i} {
   set src_nodeid [expr int([$randomSrcNodeId value])]
   set dst_nodeid [expr int([$randomDstNodeId value])]
   while {$src_nodeid == $dst_nodeid} {
-  # while {[expr abs($src_nodeid-$dst_nodeid)] > 6} 
     set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
-  set MpNode_sender($i) [$ns node]
-  set MpNode_receiver($i) [$ns node]
-  $ns rtproto Static $MpNode_sender($i)
-  $ns rtproto Static $MpNode_receiver($i)
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
   $mpath_receiver_agent($i) set fid_ $i
   for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfNode_sender($i,$j)  [$ns node]
-    $ns rtproto Static $SubfNode_sender($i,$j)
     set SubfAgent_sender($i,$j) [new Agent/XPass]
-    $ns multihome-add-interface $MpNode_sender($i) $SubfNode_sender($i,$j) 
-
-    $ns simplex-link $SubfNode_sender($i,$j) $dcNode($src_nodeid) 10GB 0us DropTail
-    $ns simplex-link $dcNode($src_nodeid) $SubfNode_sender($i,$j) 10GB 0us DropTail
+    $SubfAgent_sender($i,$j) set fid_ $j
+    $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
+    $ns attach-agent $dcSubNode($src_nodeid,$j)  $SubfAgent_sender($i,$j)
+    $mpath_sender_agent($i) attach-xpass $SubfAgent_sender($i,$j) 
   }
   for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfNode_receiver($i,$j)  [$ns node]
-    $ns rtproto Static $SubfNode_receiver($i,$j)
     set SubfAgent_receiver($i,$j) [new Agent/XPass]
-    $ns multihome-add-interface $MpNode_receiver($i) $SubfNode_receiver($i,$j) 
-
-    $ns simplex-link $SubfNode_receiver($i,$j) $dcNode($dst_nodeid) 10GB 0us DropTail
-    $ns simplex-link $dcNode($dst_nodeid) $SubfNode_receiver($i,$j) 10GB 0us DropTail
+    $SubfAgent_receiver($i,$j) set fid_ $j
+    $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
+    $ns attach-agent $dcSubNode($dst_nodeid,$j)  $SubfAgent_receiver($i,$j)
+    $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
   }
 
-  for {set j 0} {$j < $N} {incr j} {
-  $SubfAgent_sender($i,$j) set fid_ $j
-  $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
-  $SubfAgent_receiver($i,$j) set fid_ $j
-  $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
-
-  $ns attach-agent $SubfNode_sender($i,$j)  $SubfAgent_sender($i,$j) 
-  $ns attach-agent $SubfNode_receiver($i,$j) $SubfAgent_receiver($i,$j) 
-  $mpath_sender_agent($i) attach-xpass $SubfAgent_sender($i,$j) 
-  $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
-  }
-  $ns multihome-attach-agent $MpNode_sender($i) $mpath_sender_agent($i)
-  $ns multihome-attach-agent $MpNode_receiver($i) $mpath_receiver_agent($i)
+  $ns multihome-attach-agent $dcNode($src_nodeid) $mpath_sender_agent($i)
+  $ns multihome-attach-agent $dcNode($dst_nodeid) $mpath_receiver_agent($i)
   $ns multihome-connect $mpath_sender_agent($i) $mpath_receiver_agent($i)
 
   $ns at $simEndTime "$mpath_sender_agent($i) close"
@@ -301,7 +292,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
-
+  puts $i
 
 }
 puts $dcNode($dst_nodeid)
