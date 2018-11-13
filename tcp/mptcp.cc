@@ -388,13 +388,9 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       }
       remain_buffer_--;
       flow_size_ += xph->data_length_;
-      if (remain_buffer_ < 0)
-      {
-        fprintf(stderr, "ERROR : Data has received over send size.\n");
-      }
       if(remain_buffer_ == 0){
         fct_ = now() - fst_;
-        handle_fct();
+        fct_timer_.sched(default_credit_stop_timeout_);
       }
       subflows_[id].xpass_->recv_data(pkt);
       break;
