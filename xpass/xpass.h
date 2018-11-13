@@ -32,6 +32,9 @@ struct hdr_xpass {
   // Credit sequence number
   seq_t credit_seq_;
 
+  //represent active subflow
+  int is_active;
+
   //data length
   int data_length_;
 
@@ -104,7 +107,7 @@ public:
                 send_credit_timer_(this), credit_stop_timer_(this), 
                 sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
-                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),total_bytes_(0),
+                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),total_bytes_(0), is_active_(1),
                 credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
                 credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0) { }
   virtual int command(int argc, const char*const* argv);
@@ -120,6 +123,9 @@ public:
   void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
   seq_t recv_credit_mpath(Packet *pkt, int total_bytes_);
+  inline int  get_is_active(){return is_active_;};
+  void set_active();
+  void set_deactive();
 
 protected:
   virtual void delay_bind_init_all();
@@ -178,6 +184,8 @@ protected:
   double max_jitter_;
   // minimum jitter: -1.0 ~ 1.0 (wrt. inter-credit gap)
   double min_jitter_;
+  //represent subflow state
+  int is_active_;
 
   SendCreditTimer send_credit_timer_;
   CreditStopTimer credit_stop_timer_;

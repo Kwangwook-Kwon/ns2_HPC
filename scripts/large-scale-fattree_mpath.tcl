@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 10
+set numFlow 4
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -22,9 +22,9 @@ set dataBufferFromCoreToAggr [expr 250*1538] ;# bytes / port
 set dataBufferFromAggrToTor [expr 250*1538] ;# bytes / port
 set dataBufferFromTorToHost [expr 250*1538] ;# bytes / port
 
-set numCore 8 ;# number of core switches
-set numAggr 32 ;# number of aggregator switches
-set numTor 32 ;# number of ToR switches
+set numCore 4 ;# number of core switches
+set numAggr [expr $numCore*4] ;# number of aggregator switches
+set numTor [expr $numCore*4] ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
 set N $numCore;
 set K [expr $numCore/2];
@@ -69,6 +69,7 @@ close $wst_out
 close $mpath_fct
 
 set flowfile [open flowfile.tr w]
+
 
 proc finish {} {
   global ns nt flowfile

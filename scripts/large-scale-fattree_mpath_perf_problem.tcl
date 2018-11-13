@@ -2,8 +2,8 @@ set ns [new Simulator]
 
 #
 # Flow configurations
-#
-set numFlow 100000
+#cd ns
+set numFlow 1000
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -22,11 +22,11 @@ set dataBufferFromCoreToAggr [expr 250*1538] ;# bytes / port
 set dataBufferFromAggrToTor [expr 250*1538] ;# bytes / port
 set dataBufferFromTorToHost [expr 250*1538] ;# bytes / port
 
-set numCore 8 ;# number of core switches
-set numAggr 32 ;# number of aggregator switches
-set numTor 32 ;# number of ToR switches
+set numCore 4 ;# number of core switches
+set numAggr [expr $numCore*4] ;# number of aggregator switches
+set numTor [expr $numCore*4] ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
-set N $numCore;
+set N 4;
 set K [expr $numCore/2];
 
 
@@ -35,8 +35,9 @@ set K [expr $numCore/2];
 #
 set alpha 0.5
 set w_init 0.0625
-set creditBuffer [expr 84*8]
+set creditBuffer [expr 84*4]
 set maxCreditBurst [expr 84*2]
+#set controlBuffer [expr 84*100]
 set minJitter -0.1
 set maxJitter 0.1
 set minEthernetSize 84
@@ -78,7 +79,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
@@ -97,6 +98,7 @@ Agent/XPass set min_jitter_ $minJitter
 Agent/XPass set max_jitter_ $maxJitter
 
 Queue/XPassDropTail set credit_limit_ $creditBuffer
+#Queue/XPassDropTail set control_q_limit_ $controlBuffer
 Queue/XPassDropTail set max_tokens_ $maxCreditBurst
 Queue/XPassDropTail set token_refresh_rate_ $creditBW
 
@@ -243,7 +245,7 @@ for {set i 0} {$i < $numTor} {incr i} {
 
 for {set i 0} {$i < $numNode} {incr i} {
   set torIndex [expr $i/($numNode/$numTor)]
-  for {set j 0} {$j < $numCore} {incr j} {
+  for {set j 0} {$j < $N} {incr j} {
     $ns multihome-add-interface $dcNode($i) $dcSubNode($i,$j)
       
     $ns simplex-link $dcSubNode($i,$j) $dcTor($torIndex) [set linkRate]Gb [expr $linkDelayHostTor+$hostDelay] XPassDropTail
@@ -316,7 +318,6 @@ proc sendBytes {} {
   if {$fidx < $numFlow} {
     $ns at $nextTime "sendBytes"
   }
-  puts $nextTime
 }
 
 $ns at 0.0 "puts \"Simulation starts!\""

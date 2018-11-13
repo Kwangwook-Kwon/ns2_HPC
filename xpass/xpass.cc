@@ -384,6 +384,11 @@ void XPassAgent::recv_data(Packet *pkt)
   }
   fct_ = now() - fst_;
   hdr_xpass *xph = hdr_xpass::access(pkt);
+  int get_active = xph->is_active;
+  if(get_active == 0){
+    send_credit_timer_.force_cancel();
+    credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
+  }
   // distance between expected sequence number and actual sequence number.
   int distance = xph->credit_seq() - c_recv_next_;
 
@@ -626,6 +631,7 @@ Packet *XPassAgent::construct_data(Packet *credit)
   xph->credit_sent_time() = credit_xph->credit_sent_time();
   xph->credit_seq() = credit_xph->credit_seq();
   xph->data_length_ = datalen;
+  xph->is_active = get_is_active();
 
   t_seqno_ += datalen;
 
@@ -845,4 +851,11 @@ printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 */
 
 
+}
+
+void XPassAgent::set_active(){
+  is_active_ = 1;
+}
+void XPassAgent::set_deactive(){
+  is_active_ = 0;
 }

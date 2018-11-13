@@ -361,24 +361,27 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       //if(fst_ == 0){
       //  fst_ = xph -> credit_sent_time();
       //}
-      subflows_[id].xpass_->recv_credit_request(pkt);
+      for (int i = 0; i < sub_num_; i++)
+        subflows_[i].xpass_->recv_credit_request(pkt);
       if (!remain_buffer_)
         remain_buffer_ = xph->sendbuffer_;
       break;
     case PT_XPASS_CREDIT:
-      if(subflows_[id].is_active){
+      if(subflows_[id].xpass_->get_is_active() == 1){
         total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
       }
       else if(act_sub_num_ >= K ){
-        //printf("Subflow %d is de-ativated\n", id);
-        if(subflows_[id].xpass_ -> credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT)
-          subflows_[id].xpass_->send_credit_stop();
+        subflows_[id].xpass_-> set_deactive();
+        //printf("is_active : %d !!!\n", subflows_[id].xpass_->get_is_active());
+        total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
+        //printf("Subflow [%d] is de-ativated\n", id);
+        //if(subflows_[id].xpass_ -> credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT)
+        //  subflows_[id].xpass_->send_credit_stop();
         break;
       }
       else{
-        //printf("Subflow %d is ativated\n", id);
         act_sub_num_++;
-        subflows_[id].is_active = true;
+        subflows_[id].xpass_->set_active();
         total_bytes_ -= subflows_[id].xpass_->recv_credit_mpath(pkt, total_bytes_);
       }
       break;
@@ -462,8 +465,12 @@ void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
 
 void MptcpAgent::send_xpass()
 {
-  for (int i = 0; i < sub_num_; i++)
-    subflows_[i].xpass_->send_credit_request((seq_t)total_bytes_);
+  for (int i = 0; i < sub_num_; i++){
+    subflows_[i].xpass_ -> set_deactive();
+    subflows_[i].xpass_ -> credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
+  }
+  srand(total_bytes_);
+  subflows_[rand()%sub_num_].xpass_->send_credit_request((seq_t)total_bytes_);
 }
 
 /*
