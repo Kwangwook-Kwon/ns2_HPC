@@ -1625,3 +1625,4 @@ Agent/XPass set max_jitter_ 0.1
 Agent/MPTCP set default_credit_stop_timeout_ 0.1
 Agent/MPTCP set use_olia_ 0;
 Agent/MPTCP set K 100;
+Agent/MPTCP set is_sender_ 0

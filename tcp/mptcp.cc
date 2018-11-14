@@ -58,8 +58,8 @@ void MP_Waste_Timer::expire(Event *)
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), remain_bytes_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
-                           fid_(-1), dst_num_(0), fct_(-1), fst_(-1), fct_timer_(this), waste_timer_(this),
-                           K(100), act_sub_num_(0), credit_wasted(-1)
+                           fid_(-1), dst_num_(0), fct_(-1), fst_(-1),
+                           K(100), act_sub_num_(0), credit_wasted(-1), is_sender_(0)
 {
 }
 
@@ -70,6 +70,7 @@ void MptcpAgent::delay_bind_init_all()
   delay_bind_init_one("fid_");
   delay_bind_init_one("default_credit_stop_timeout_");
   delay_bind_init_one("K");
+  delay_bind_init_one("is_sender_");
 }
 
 /* haven't implemented yet */
@@ -91,6 +92,10 @@ int MptcpAgent::delay_bind_dispatch(const char *varName,
     return TCL_OK;
   }
   if (delay_bind(varName, localName, "K", &K, tracer))
+  {
+    return TCL_OK;
+  }
+  if (delay_bind(varName, localName, "is_sender_", &is_sender_, tracer))
   {
     return TCL_OK;
   }
@@ -179,9 +184,14 @@ int MptcpAgent::command(int argc, const char *const *argv)
         subflows_[0].tcp_->mptcp_set_primary();
       return (TCL_OK);
     }
-    if (strcmp(argv[1], "close") == 0){
-      handle_waste();
-      handle_fct();
+    if (strcmp(argv[1], "close") == 0)
+    {
+      if (is_sender_ == 1){
+        this -> handle_waste();
+      }
+      else {
+        this -> handle_fct();
+      }
       return (TCL_OK);
     }
   }
@@ -374,14 +384,15 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       break;
     case PT_XPASS_CREDIT:
       int sent_bytes;
-      if(subflows_[primary_subflow_].xpass_-> credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT){
-            subflows_[primary_subflow_].xpass_ -> sender_retransmit_timer_.force_cancel();
+      if (subflows_[primary_subflow_].xpass_->credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT)
+      {
+        subflows_[primary_subflow_].xpass_->sender_retransmit_timer_.force_cancel();
       }
       if (subflows_[id].xpass_->get_is_active() == true)
       {
         sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
         remain_bytes_ -= sent_bytes;
-        if(sent_bytes == 0)
+        if (sent_bytes == 0)
           credit_wasted++;
       }
       else if (act_sub_num_ >= K)
@@ -389,7 +400,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
         subflows_[id].xpass_->set_deactive();
         sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
         remain_bytes_ -= sent_bytes;
-        if(sent_bytes == 0)
+        if (sent_bytes == 0)
           credit_wasted++;
         break;
       }
@@ -399,7 +410,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
         subflows_[id].xpass_->set_active();
         sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
         remain_bytes_ -= sent_bytes;
-        if(sent_bytes == 0)
+        if (sent_bytes == 0)
           credit_wasted++;
       }
       break;
@@ -471,7 +482,8 @@ void MptcpAgent::sendmsg(int nbytes, const char * /*flags */)
     infinite_send_ = true;
     remain_bytes_ = TCP_MAXSEQ;
   }
-  else{
+  else
+  {
     remain_bytes_ = nbytes;
     total_bytes_ = remain_bytes_;
   }
@@ -673,21 +685,17 @@ void MptcpAgent::set_dataack(int ackno, int length)
 
 void MptcpAgent::handle_fct()
 {
-  if(fct_ > 0){
-    FILE *fct_out = fopen("outputs/mp_fct.out", "a");
-    fprintf(fct_out, "%d,%ld,%.10lf\n", fid_, flow_size_, fct_);
-    fclose(fct_out);
-  }
+  FILE *fct_out = fopen("outputs/mp_fct.out", "a");
+  fprintf(fct_out, "%d,%ld,%.10lf\n", fid_, flow_size_, fct_);
+  fclose(fct_out);
   //credit_send_state_ = XPASS_SEND_CLOSED;
 }
 
 void MptcpAgent::handle_waste()
 {
-  if(credit_wasted > 0){
-    FILE *waste_out = fopen("outputs/mp_waste.out", "a");
-    fprintf(waste_out, "%d,%ld,%d\n", fid_, total_bytes_, credit_wasted);
-    fclose(waste_out);
-  }
+  FILE *waste_out = fopen("outputs/mp_waste.out", "a");
+  fprintf(waste_out, "%d,%ld,%d\n", fid_, total_bytes_, credit_wasted);
+  fclose(waste_out);
 }
 
 double MptcpAgent::get_xpass_rtt()
@@ -695,8 +703,9 @@ double MptcpAgent::get_xpass_rtt()
   double rtt = 0;
   for (int i = 0; i < sub_num_; i++)
   {
-    if (subflows_[i].xpass_->get_rtt() > rtt);
-      rtt = subflows_[i].xpass_->get_rtt();
+    if (subflows_[i].xpass_->get_rtt() > rtt)
+      ;
+    rtt = subflows_[i].xpass_->get_rtt();
   }
   return rtt;
 }

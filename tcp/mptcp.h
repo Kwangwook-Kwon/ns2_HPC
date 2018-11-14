@@ -141,12 +141,11 @@ protected:
   inline double now() { return Scheduler::instance().clock(); }
 
   Classifier *core_;
-  MP_FCT_Timer fct_timer_;
-  MP_Waste_Timer waste_timer_;
 
   bool infinite_send_;
   int credit_wasted;
   bool is_xpass;
+  int is_sender_;
   int sub_num_;
   int dst_num_;
   int remain_bytes_;

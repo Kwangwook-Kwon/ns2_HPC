@@ -271,6 +271,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
+  $mpath_sender_agent($i) set is_sender_ 1
   $mpath_receiver_agent($i) set fid_ $i
   for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfAgent_sender($i,$j) [new Agent/XPass]
@@ -304,7 +305,7 @@ set fidx 0
 
 puts "Creating flows..."
 proc sendBytes {} {
-  global ns random_flow_size nextTime mpath_sender_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
+  global ns random_flow_size nextTime mpath_sender_agent mpath_receiver_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile simEndTime
   while {1} {
     set fsize [expr ceil([expr [$randomFlowSize value]])]
     if {$fsize > 0} {
@@ -313,8 +314,8 @@ proc sendBytes {} {
   }
   puts $flowfile "$nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
   $ns at $nextTime "$mpath_sender_agent($fidx) send-msg $fsize"
-  $ns at $simEndTime "$mpath_sender_agent($fidx) close"
-  $ns at $simEndTime "$mpath_receiver_agent($fidx) close"
+  #$ns at $simEndTime "$mpath_sender_agent($fidx) close"
+  #$ns at $simEndTime "$mpath_receiver_agent($fidx) close"
   set nextTime [expr $nextTime+[$randomFlowInterval value]]
   set fidx [expr $fidx+1]
   if {$fidx < $numFlow} {
