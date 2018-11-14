@@ -33,7 +33,7 @@ struct hdr_xpass {
   seq_t credit_seq_;
 
   //represent active subflow
-  int is_active;
+  bool is_active;
 
   //data length
   int data_length_;
@@ -107,14 +107,14 @@ public:
                 send_credit_timer_(this), credit_stop_timer_(this), 
                 sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
-                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),total_bytes_(0), is_active_(1),
+                c_seqno_(1), c_recv_next_(1), rtt_(-0.0),remain_bytes_(0), is_active_(false),
                 credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
                 credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);
   inline double now() { return Scheduler::instance().clock(); }
   seq_t datalen_remaining() { return (curseq_ - t_seqno_); }
-  seq_t mpath_pkt_remaining(){return ceil(total_bytes_/(double)max_segment());}
+  seq_t mpath_pkt_remaining(){return ceil(remain_bytes_/(double)max_segment());}
   int max_segment() { return (max_ethernet_size_ - xpass_hdr_size_); }
   int pkt_remaining() { return ceil(datalen_remaining()/(double)max_segment()); }
   double avg_credit_size() { return (min_credit_size_ + max_credit_size_)/2.0; }
@@ -122,10 +122,11 @@ public:
   void send_credit_stop();
   void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
-  seq_t recv_credit_mpath(Packet *pkt, int total_bytes_);
-  inline int  get_is_active(){return is_active_;};
-  void set_active();
-  void set_deactive();
+  seq_t recv_credit_mpath(Packet *pkt, int remain_bytes_);
+  inline bool   get_is_active(){return is_active_;};
+  inline void   set_active(){is_active_ = true;};
+  inline void   set_deactive(){is_active_ = false;};
+  inline double get_rtt(){return rtt_;};
 
 protected:
   virtual void delay_bind_init_all();
@@ -185,7 +186,7 @@ protected:
   // minimum jitter: -1.0 ~ 1.0 (wrt. inter-credit gap)
   double min_jitter_;
   //represent subflow state
-  int is_active_;
+  bool is_active_;
 
   SendCreditTimer send_credit_timer_;
   CreditStopTimer credit_stop_timer_;
@@ -204,7 +205,7 @@ protected:
   // next credit sequence number expected
   seq_t c_recv_next_;
   //Total send Bytes on Mpath agent
-  seq_t total_bytes_;
+  seq_t remain_bytes_;
 
   // weighted-average round trip time
   double rtt_;

@@ -26,8 +26,8 @@ set numCore 4 ;# number of core switches
 set numAggr [expr $numCore*4] ;# number of aggregator switches
 set numTor [expr $numCore*4] ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
-set N 4;
-set K [expr $numCore/2];
+set N $numCore;
+set K [expr $N/2];
 
 
 #
@@ -61,7 +61,7 @@ file mkdir "outputs"
 set mpath_fct [open "outputs/mp_fct.out" w]
 set nt [open "outputs/trace.out" w]
 set fct_out [open "outputs/fct.out" w]
-set wst_out [open "outputs/waste.out" w]
+set wst_out [open "outputs/mp_waste.out" w]
 puts $fct_out "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $mpath_fct "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $wst_out "Flow ID,Flow Size (bytes),Wasted Credit"
@@ -313,6 +313,8 @@ proc sendBytes {} {
   }
   puts $flowfile "$nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
   $ns at $nextTime "$mpath_sender_agent($fidx) send-msg $fsize"
+  $ns at $simEndTime "$mpath_sender_agent($fidx) close"
+  $ns at $simEndTime "$mpath_receiver_agent($fidx) close"
   set nextTime [expr $nextTime+[$randomFlowInterval value]]
   set fidx [expr $fidx+1]
   if {$fidx < $numFlow} {

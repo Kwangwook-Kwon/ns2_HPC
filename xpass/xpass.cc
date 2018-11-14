@@ -305,10 +305,11 @@ void XPassAgent::recv_credit(Packet *pkt)
   }
 }
 
-seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
+seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
 {
   //printf("MAX Segment : %d \n", max_segment());
-  seq_t send_datalen = min(max_segment(), total_bytes_);
+  seq_t send_datalen = min(max_segment(), remain_bytes);
+  curseq_ += send_datalen;
   credit_recved_rtt_++;
   switch (credit_recv_state_)
   {
@@ -322,11 +323,15 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
     // send data
     if (send_datalen > 0)
     {
-      curseq_ += send_datalen;
       send(construct_data(pkt), 0);
+      if (is_active_ == false)
+      {
+        credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
+        sender_retransmit_timer_.resched(rtt_ > 0 ? (2. * rtt_) : default_credit_stop_timeout_);
+      }
     }
 
-    if (total_bytes_ <=  max_segment())
+    if (remain_bytes <= max_segment())
     {
       if (credit_stop_timer_.status() != TIMER_IDLE)
       {
@@ -339,7 +344,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
     }
     else if (now() - last_credit_recv_update_ >= rtt_)
     {
-      if (credit_recved_rtt_ >= (1 * total_bytes_))
+      if (credit_recved_rtt_ >= (1 * remain_bytes))
       {
         // Early credit stop
         if (credit_stop_timer_.status() != TIMER_IDLE)
@@ -356,7 +361,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
     }
     break;
   case XPASS_RECV_CREDIT_STOP_SENT:
-    if (datalen_remaining() > 0)
+    if (send_datalen  > 0)
     {
       send(construct_data(pkt), 0);
     }
@@ -379,13 +384,14 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int total_bytes_)
 
 void XPassAgent::recv_data(Packet *pkt)
 {
-  if(fst_ == -1){
+  if (fst_ == -1)
+  {
     fst_ = now();
   }
   fct_ = now() - fst_;
   hdr_xpass *xph = hdr_xpass::access(pkt);
-  int get_active = xph->is_active;
-  if(get_active == 0){
+  if (!xph->is_active)
+  {
     send_credit_timer_.force_cancel();
     credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
   }
@@ -518,7 +524,7 @@ Packet *XPassAgent::construct_credit_request()
 
   xph->credit_seq() = 0;
   xph->credit_sent_time_ = now();
-  if (total_bytes_ > 0)
+  if (remain_bytes_ > 0)
   {
     xph->sendbuffer_ = mpath_pkt_remaining();
   }
@@ -684,7 +690,6 @@ void XPassAgent::send_credit()
   //printf("Send_credit()::delay            : %lf\n", delay);
   //printf("Send_credit()::avg_credit_size  : %lf\n", avg_credit_size );
   //printf("Send_credit()::cur_credit_rate  : %d\n", cur_credit_rate_ );
-
 }
 
 void XPassAgent::send_credit_stop()
@@ -719,7 +724,7 @@ void XPassAgent::advance_bytes(seq_t nb)
 
 void XPassAgent::send_credit_request(seq_t nb)
 {
-  total_bytes_ += nb;
+  remain_bytes_ += nb;
   send(construct_credit_request(), 0);
   sender_retransmit_timer_.sched(retransmit_timeout_);
   credit_recv_state_ = XPASS_RECV_CREDIT_REQUEST_SENT;
@@ -840,7 +845,7 @@ void XPassAgent::credit_feedback_control()
   credit_total_ = 0;
   credit_dropped_ = 0;
   last_credit_rate_update_ = now();
-/*
+  /*
 printf("Credit_feedback_control()::old_rate         : %d\n", old_rate);
 printf("Credit_feedback_control()::loss_rate        : %lf\n", loss_rate);
 printf("Credit_feedback_control()::target_loss      : %lf\n", target_loss);
@@ -849,13 +854,4 @@ printf("Credit_feedback_control()::rtt_             : %lf\n", rtt_);
 printf("Credit_feedback_control()::w_               : %lf\n", w_);
 printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 */
-
-
-}
-
-void XPassAgent::set_active(){
-  is_active_ = 1;
-}
-void XPassAgent::set_deactive(){
-  is_active_ = 0;
 }

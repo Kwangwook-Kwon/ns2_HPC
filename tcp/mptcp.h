@@ -40,9 +40,17 @@
 #define MAX_SUBFLOW 100
 class MptcpAgent;
 
-class MP_FCTTimer: public TimerHandler {
+class MP_FCT_Timer: public TimerHandler {
 public:
-  MP_FCTTimer(MptcpAgent *a): TimerHandler(), a_(a) { }
+  MP_FCT_Timer(MptcpAgent *a): TimerHandler(), a_(a) { }
+protected:
+  virtual void expire(Event *);
+  MptcpAgent *a_;
+};
+
+class MP_Waste_Timer: public TimerHandler {
+public:
+  MP_Waste_Timer(MptcpAgent *a): TimerHandler(), a_(a) { }
 protected:
   virtual void expire(Event *);
   MptcpAgent *a_;
@@ -93,7 +101,7 @@ public:
     MptcpAgent ();
    ~MptcpAgent ()
   {
-  };
+  }
   void recv (Packet * pkt, Handler *);
   void set_dataack (int ackno, int length);
   int get_dataack ()
@@ -115,6 +123,11 @@ public:
   int command (int argc, const char *const *argv);
   void calculate_alpha ();
   TracedInt curseq_;
+  double get_xpass_rtt();
+  void handle_fct();
+  void handle_waste();
+
+  
 protected:
   virtual void delay_bind_init_all();
   virtual int delay_bind_dispatch(const char *varName, const char *localName, TclObject *tracer);
@@ -126,15 +139,17 @@ protected:
   void add_destination (int addr, int port);
   bool check_routable (int sid, int addr, int port);
   inline double now() { return Scheduler::instance().clock(); }
-  void handle_fct();
 
   Classifier *core_;
-  MP_FCTTimer fct_timer_;
+  MP_FCT_Timer fct_timer_;
+  MP_Waste_Timer waste_timer_;
 
   bool infinite_send_;
+  int credit_wasted;
   bool is_xpass;
   int sub_num_;
   int dst_num_;
+  int remain_bytes_;
   int total_bytes_;
   int remain_buffer_;
   int flow_size_;
@@ -144,6 +159,7 @@ protected:
   int fid_;
   int K;
   int act_sub_num_;
+  int primary_subflow_;
   double fst_;
   double fct_;
   double default_credit_stop_timeout_;

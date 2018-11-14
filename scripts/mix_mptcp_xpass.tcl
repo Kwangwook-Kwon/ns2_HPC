@@ -144,10 +144,15 @@ $ns multihome-connect $mptcp2 $mptcpsink2
 $mptcpsink listen
 
 
-
+$agent0 set fid_ 0
+$agent1 set fid_ 1
+$agent2 set fid_ 0
+$agent3 set fid_ 1
 
 puts "Simulation started."
-$ns at 0.0 "$mptcp send-msg 2000000000"
+$ns at 0.0 "$mptcp send-msg 2500"
+$ns at 9.9 "$mptcp close"
+$ns at 9.9 "$mptcpsink close"
 
 $ns at 10.0 "finish"
 $ns run

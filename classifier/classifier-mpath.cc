@@ -84,7 +84,7 @@ public:
       
       unsigned int ms_;
 
-      ms_ = iph -> flowid();
+      ms_ = iph -> flowid()%numCore_;
       if(nodetype_ == 2){
         ms_ = ms_/(numCore_/2);
       }else{ 
