@@ -324,7 +324,7 @@ proc sendBytes {} {
       break;
     }
   }
-  puts $flowfile "$nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
+  puts $flowfile "$fidx $nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
   $ns at $nextTime "$mpath_sender_agent($fidx) send-msg $fsize"
   #$ns at [expr $nextTime+1] "$mpath_sender_agent($fidx) close"
   #$ns at [expr $nextTime+1] "$mpath_receiver_agent($fidx) close"
