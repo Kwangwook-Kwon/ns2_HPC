@@ -861,7 +861,7 @@ printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 */
 }
 
-bool XpassAgent::check_stop(int remain_bytes){
+bool XPassAgent::check_stop(int remain_bytes){
   if (remain_bytes <= max_segment())
     {
       if (credit_stop_timer_.status() != TIMER_IDLE)
