@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 1000
+set numFlow 100000
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -79,7 +79,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-$ns trace-all $nt
+#$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K

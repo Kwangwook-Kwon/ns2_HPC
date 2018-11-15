@@ -340,7 +340,9 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
       }
       // Because ns2 does not allow sending two consecutive packets,
       // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+      credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
       credit_stop_timer_.sched(0);
+        printf(" stop 111111!!!  %fl\n",now());
     }
     else if (now() - last_credit_recv_update_ >= rtt_)
     {
@@ -354,6 +356,8 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
         }
         // Because ns2 does not allow sending two consecutive packets,
         // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+        printf("Earl stop!!!  %fl\n",now());
+        credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
         credit_stop_timer_.sched(0);
       }
       credit_recved_rtt_ = 0;
@@ -434,7 +438,7 @@ void XPassAgent::recv_nack(Packet *pkt)
 void XPassAgent::recv_credit_stop(Packet *pkt)
 {
   //fct_ = now() - fst_;
-  fct_timer_.sched(default_credit_stop_timeout_);
+  fct_timer_.resched(default_credit_stop_timeout_);
   send_credit_timer_.force_cancel();
   credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
 }
@@ -482,6 +486,8 @@ void XPassAgent::handle_sender_retransmit()
       return;
     }
     // retransmit credit_stop
+      printf(" stop 222222!!!  %fl\n",now());
+
     send_credit_stop();
     break;
   case XPASS_RECV_CLOSED:

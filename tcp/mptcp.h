@@ -38,6 +38,16 @@
 
 
 #define MAX_SUBFLOW 100
+
+typedef enum MP_SENDER_STATE_ {
+  MP_SENDER_CLOSED=1,
+  MP_SENDER_CLOSE_WAIT,
+  MP_SENDER_CREDIT_REQUEST_SENT,
+  MP_SENDER_CREDIT_RECEIVING,
+  MP_SENDER_CREDIT_STOP_SENT,
+  MP_SENDER_NSTATE,
+} MP_SENDER_STATE;
+
 class MptcpAgent;
 
 class MP_FCT_Timer: public TimerHandler {
@@ -126,8 +136,9 @@ public:
   double get_xpass_rtt();
   void handle_fct();
   void handle_waste();
+  int find_low_rtt();
+  MP_SENDER_STATE mp_sender_state_;
 
-  
 protected:
   virtual void delay_bind_init_all();
   virtual int delay_bind_dispatch(const char *varName, const char *localName, TclObject *tracer);

@@ -146,6 +146,7 @@ $mptcpsink listen
 
 $agent0 set fid_ 0
 $agent1 set fid_ 1
+$mptcp set is_sender_ 1
 $agent2 set fid_ 0
 $agent3 set fid_ 1
 
