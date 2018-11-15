@@ -268,8 +268,8 @@ for {set i 0} {$i < $numFlow} {incr i} {
     set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
-  set srctorIndex  [expr $src_nodeid/($numNode/$numTor)]
-  set dsttorIndex  [expr $dst_nodeid/($numNode/$numTor)]
+  set srcTorIndex  [expr $src_nodeid/($numNode/$numTor)]
+  set dstTorIndex  [expr $dst_nodeid/($numNode/$numTor)]
   set srcAggrIndex [expr $srctorIndex/2]
   set dstAggrIndex [expr $dsttorIndex/2]
 
