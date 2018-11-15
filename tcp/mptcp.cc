@@ -391,7 +391,6 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
 
       if (mp_sender_state_ == MP_SENDER_CREDIT_RECEIVING && subflows_[id].xpass_->check_stop(remain_bytes_))
       {
-        printf("Triggerd!!!!!! %d :: %fl\n", id, now());
         mp_sender_state_ = MP_SENDER_CREDIT_STOP_SENT;
         subflows_[find_low_rtt()].xpass_->credit_stop_timer_.sched(0);
         for (int i = 0; i < sub_num_; i++)
