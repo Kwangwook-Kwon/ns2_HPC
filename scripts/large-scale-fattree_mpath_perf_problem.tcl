@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 100000
+set numFlow 10
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.5 ;# ranges from 0.0 to 1.0
 
@@ -25,7 +25,7 @@ set dataBufferFromTorToHost [expr 250*1538] ;# bytes / port
 set numCore 4 ;# number of core switches
 set numAggr [expr $numCore*$numCore/2] ;# number of aggregator switches
 set numTor  [expr $numCore*$numCore/2] ;# number of ToR switches
-set numNode [expr $numTor*5 ] ;# number of nodes
+set numNode [expr $numTor*6 ] ;# number of nodes
 set N $numCore;
 set K [expr $N/2];
 
@@ -79,7 +79,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
@@ -268,11 +268,24 @@ for {set i 0} {$i < $numFlow} {incr i} {
     set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
+  set srctorIndex  [expr $src_nodeid/($numNode/$numTor)]
+  set dsttorIndex  [expr $dst_nodeid/($numNode/$numTor)]
+  set srcAggrIndex [expr $srctorIndex/2]
+  set dstAggrIndex [expr $dsttorIndex/2]
+
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
   $mpath_sender_agent($i) set fid_ $i
   $mpath_sender_agent($i) set is_sender_ 1
   $mpath_receiver_agent($i) set fid_ $i
+
+  if{srcAggrIndex == dstAggrIndex} {
+    if{srcTorIndex == dstTorIndex} {
+      $mpath_sender_agent($i) set K 1
+    }
+    $mpath_sender_agent($i) set K 2
+  }
+
   for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfAgent_sender($i,$j) [new Agent/XPass]
     $SubfAgent_sender($i,$j) set fid_ $j
