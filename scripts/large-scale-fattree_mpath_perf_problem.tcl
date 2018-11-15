@@ -5,7 +5,7 @@ set ns [new Simulator]
 #cd ns
 set numFlow 100000
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
-set linkLoad 0.6 ;# ranges from 0.0 to 1.0
+set linkLoad 0.5 ;# ranges from 0.0 to 1.0
 
 #
 # Toplogy configurations
@@ -69,7 +69,7 @@ close $fct_out
 close $wst_out
 close $mpath_fct
 
-set flowfile [open flowfile.tr w]
+set flowfile [open "outputs/flowfile.tr" w]
 
 proc finish {} {
   global ns nt flowfile
