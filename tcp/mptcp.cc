@@ -59,7 +59,7 @@ void MP_Waste_Timer::expire(Event *)
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), remain_bytes_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0),
                            fid_(-1), dst_num_(0), fct_(-1), fst_(-1), mp_sender_state_(MP_SENDER_CLOSED),
-                           K(100), act_sub_num_(0), credit_wasted(-1), is_sender_(0)
+                           K(100), act_sub_num_(0), credit_wasted(-1), is_sender_(0), flow_size_(0)
 {
 }
 
