@@ -706,7 +706,7 @@ void MptcpAgent::set_dataack(int ackno, int length)
 void MptcpAgent::handle_fct()
 {
   FILE *fct_out = fopen("outputs/mp_fct.out", "a");
-  fprintf(fct_out, "%d,%ld,%.10lf\n", fid_, flow_size_, fct_);
+  fprintf(fct_out, "%d,%lld,%.10lf\n", fid_, flow_size_, fct_);
   fclose(fct_out);
   //credit_send_state_ = XPASS_SEND_CLOSED;
 }
@@ -714,7 +714,7 @@ void MptcpAgent::handle_fct()
 void MptcpAgent::handle_waste()
 {
   FILE *waste_out = fopen("outputs/mp_waste.out", "a");
-  fprintf(waste_out, "%d,%ld,%d\n", fid_, total_bytes_, credit_wasted);
+  fprintf(waste_out, "%d,%lld,%lld\n", fid_, total_bytes_, credit_wasted);
   fclose(waste_out);
 }
 

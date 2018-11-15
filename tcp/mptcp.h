@@ -154,15 +154,15 @@ protected:
   Classifier *core_;
 
   bool infinite_send_;
-  int credit_wasted;
+  seq_t credit_wasted;
   bool is_xpass;
   int is_sender_;
   int sub_num_;
   int dst_num_;
-  int remain_bytes_;
-  int total_bytes_;
+  seq_t remain_bytes_;
+  seq_t total_bytes_;
   int remain_buffer_;
-  int flow_size_;
+  seq_t flow_size_;
   int mcurseq_;
   int mackno_;
   int use_olia_;
