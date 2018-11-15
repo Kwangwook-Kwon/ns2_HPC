@@ -22,7 +22,7 @@ set dataBufferFromCoreToAggr [expr 250*1538] ;# bytes / port
 set dataBufferFromAggrToTor [expr 250*1538] ;# bytes / port
 set dataBufferFromTorToHost [expr 250*1538] ;# bytes / port
 
-set numCore 4 ;# number of core switches
+set numCore 8 ;# number of core switches
 set numAggr [expr ($numCore^2)/2] ;# number of aggregator switches
 set numTor  [expr ($numCore^2)/2] ;# number of ToR switches
 set numNode [expr $numTor*5 ] ;# number of nodes
