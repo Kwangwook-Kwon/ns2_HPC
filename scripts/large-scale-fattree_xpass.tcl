@@ -301,9 +301,9 @@ proc sendBytes {} {
   if {$fidx < $numFlow} {
     $ns at $nextTime "sendBytes"
   }
-  //puts $nextTime
-  //puts " "
-  //puts " "
+  #puts $nextTime
+  #puts " "
+  #puts " "
 }
 
 $ns at 0.0 "puts \"Simulation starts!\""
