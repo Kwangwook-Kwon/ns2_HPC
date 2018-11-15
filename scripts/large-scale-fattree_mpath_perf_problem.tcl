@@ -270,8 +270,8 @@ for {set i 0} {$i < $numFlow} {incr i} {
   }
   set srcTorIndex  [expr $src_nodeid/($numNode/$numTor)]
   set dstTorIndex  [expr $dst_nodeid/($numNode/$numTor)]
-  set srcAggrIndex [expr $srctorIndex/2]
-  set dstAggrIndex [expr $dsttorIndex/2]
+  set srcAggrIndex [expr $srcTorIndex/2]
+  set dstAggrIndex [expr $dstTorIndex/2]
 
   set mpath_sender_agent($i) [new Agent/MPTCP]
   set mpath_receiver_agent($i) [new Agent/MPTCP]
