@@ -2,7 +2,7 @@ set ns [new Simulator]
 
 #
 # Flow configurations
-#cd ns
+#
 set numFlow 100000
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
@@ -28,7 +28,6 @@ set numTor  [expr $numCore*$numCore/2] ;# number of ToR switches
 set numNode [expr $numTor*6 ] ;# number of nodes
 set N $numCore;
 set K [expr $N/2];
-
 
 #
 # XPass configurations
@@ -81,8 +80,6 @@ proc finish {} {
 $ns trace-all $nt
 
 # Basic parameter settings
-Agent/MPTCP set K $K
-
 Agent/XPass set min_credit_size_ $minCreditSize
 Agent/XPass set max_credit_size_ $maxCreditSize
 Agent/XPass set min_ethernet_size_ $minEthernetSize
@@ -97,7 +94,6 @@ Agent/XPass set min_jitter_ $minJitter
 Agent/XPass set max_jitter_ $maxJitter
 
 Queue/XPassDropTail set credit_limit_ $creditBuffer
-#Queue/XPassDropTail set control_q_limit_ $controlBuffer
 Queue/XPassDropTail set max_tokens_ $maxCreditBurst
 Queue/XPassDropTail set token_refresh_rate_ $creditBW
 
@@ -105,8 +101,8 @@ DelayLink set avoidReordering_ true
 $ns rtproto DV
 Agent/rtProto/DV set advertInterval 10
 Node set multiPath_ 1
-Classifier/MultiPath set ecmp_ 1
-Classifier/MultiPath set symmetric_ 0
+Classifier/MultiPath set ecmp_ 0
+Classifier/MultiPath set symmetric_ 1
 Classifier/MultiPath set perflow_ 0
 Classifier/MultiPath set nodetype_ 0
 Classifier/MultiPath set numCore_ $numCore
@@ -167,21 +163,21 @@ $randomDstNodeId set max_ $numNode
 
 # Node
 puts "Creating nodes..."
-for {set i 0} {$i < $numCore} {incr i} {
-  set dcCore($i) [$ns node]
-  $dcCore($i) set nodetype_ 4
-}
-for {set i 0} {$i < $numAggr} {incr i} {
-  set dcAggr($i) [$ns node]
-  $dcAggr($i) set nodetype_ 3
+for {set i 0} {$i < $numNode} {incr i} {
+  set dcNode($i) [$ns node]
+  $dcNode($i) set nodetype_ 1
 }
 for {set i 0} {$i < $numTor} {incr i} {
   set dcTor($i) [$ns node]
   $dcTor($i) set nodetype_ 2
 }
-for {set i 0} {$i < $numNode} {incr i} {
-  set dcNode($i) [$ns node]
-  $dcNode($i) set nodetype_ 1
+for {set i 0} {$i < $numAggr} {incr i} {
+  set dcAggr($i) [$ns node]
+  $dcAggr($i) set nodetype_ 3
+}
+for {set i 0} {$i < $numCore} {incr i} {
+  set dcCore($i) [$ns node]
+  $dcCore($i) set nodetype_ 4
 }
 
 for {set i 0} {$i < $numNode} {incr i} {
@@ -190,7 +186,6 @@ for {set i 0} {$i < $numNode} {incr i} {
     $dcSubNode($i,$j) set nodetype_ 1
   }
 }
-
 # Link
 puts "Creating links..."
 for {set i 0} {$i < $numAggr} {incr i} {
@@ -241,98 +236,74 @@ for {set i 0} {$i < $numTor} {incr i} {
   }
 }
 
-
 for {set i 0} {$i < $numNode} {incr i} {
   set torIndex [expr $i/($numNode/$numTor)]
-  for {set j 0} {$j < $N} {incr j} {
-    $ns multihome-add-interface $dcNode($i) $dcSubNode($i,$j)
-      
-    $ns simplex-link $dcSubNode($i,$j) $dcTor($torIndex) [set linkRate]Gb [expr $linkDelayHostTor+$hostDelay] XPassDropTail
-    set link_host_tor [$ns link $dcSubNode($i,$j) $dcTor($torIndex)]
-    set queue_host_tor [$link_host_tor queue]
-    $queue_host_tor set data_limit_ $dataBufferHost
 
-    $ns simplex-link $dcTor($torIndex) $dcSubNode($i,$j) [set linkRate]Gb $linkDelayHostTor XPassDropTail
-    set link_tor_host [$ns link $dcTor($torIndex) $dcSubNode($i,$j)]
-    set queue_tor_host [$link_tor_host queue]
-    $queue_tor_host set data_limit_ $dataBufferFromTorToHost
-  }
+  $ns simplex-link $dcNode($i) $dcTor($torIndex) [set linkRate]Gb [expr $linkDelayHostTor+$hostDelay] XPassDropTail
+  set link_host_tor [$ns link $dcNode($i) $dcTor($torIndex)]
+  set queue_host_tor [$link_host_tor queue]
+  $queue_host_tor set data_limit_ $dataBufferHost
+
+  $ns simplex-link $dcTor($torIndex) $dcNode($i) [set linkRate]Gb $linkDelayHostTor XPassDropTail
+  set link_tor_host [$ns link $dcTor($torIndex) $dcNode($i)]
+  set queue_tor_host [$link_tor_host queue]
+  $queue_tor_host set data_limit_ $dataBufferFromTorToHost
 }
 
-puts "Creating agents ..."
+puts "Creating agents and flows..."
 for {set i 0} {$i < $numFlow} {incr i} {
   set src_nodeid [expr int([$randomSrcNodeId value])]
   set dst_nodeid [expr int([$randomDstNodeId value])]
+
   while {$src_nodeid == $dst_nodeid} {
     set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
-  set srcTorIndex  [expr $src_nodeid/($numNode/$numTor)]
-  set dstTorIndex  [expr $dst_nodeid/($numNode/$numTor)]
-  set srcAggrIndex [expr $srcTorIndex/2]
-  set dstAggrIndex [expr $dstTorIndex/2]
 
-  set mpath_sender_agent($i) [new Agent/MPTCP]
-  set mpath_receiver_agent($i) [new Agent/MPTCP]
-  $mpath_sender_agent($i) set fid_ $i
-  $mpath_sender_agent($i) set is_sender_ 1
-  $mpath_receiver_agent($i) set fid_ $i
+  set sender($i) [new Agent/XPass]
+  set receiver($i) [new Agent/XPass]
 
-  if { $srcAggrIndex == $dstAggrIndex } {
-    if { $srcTorIndex == $dstTorIndex } {
-      $mpath_sender_agent($i) set K 1
-    }
-    $mpath_sender_agent($i) set K 2
-  }
+  $sender($i) set fid_ $i
+  $sender($i) set host_id_ $src_nodeid
+  $receiver($i) set fid_ $i
+  $receiver($i) set host_id_ $dst_nodeid
 
-  for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfAgent_sender($i,$j) [new Agent/XPass]
-    $SubfAgent_sender($i,$j) set fid_ $j
-    $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
-    $ns attach-agent $dcSubNode($src_nodeid,$j)  $SubfAgent_sender($i,$j)
-    $mpath_sender_agent($i) attach-xpass $SubfAgent_sender($i,$j) 
-  }
-  for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfAgent_receiver($i,$j) [new Agent/XPass]
-    $SubfAgent_receiver($i,$j) set fid_ $j
-    $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
-    $ns attach-agent $dcSubNode($dst_nodeid,$j)  $SubfAgent_receiver($i,$j)
-    $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
-  }
+  $ns attach-agent $dcNode($src_nodeid) $sender($i)
+  $ns attach-agent $dcNode($dst_nodeid) $receiver($i)
 
-  $ns multihome-attach-agent $dcNode($src_nodeid) $mpath_sender_agent($i)
-  $ns multihome-attach-agent $dcNode($dst_nodeid) $mpath_receiver_agent($i)
-  $ns multihome-connect $mpath_sender_agent($i) $mpath_receiver_agent($i)
+  $ns connect $sender($i) $receiver($i)
 
-  $ns at $simEndTime "$mpath_sender_agent($i) close"
-  $ns at $simEndTime "$mpath_receiver_agent($i) close"
+  $ns at $simEndTime "$sender($i) close"
+  $ns at $simEndTime "$receiver($i) close"
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
 }
-puts $dcNode($dst_nodeid)
 
 set nextTime $simStartTime
 set fidx 0
 
-puts "Creating flows..."
 proc sendBytes {} {
-  global ns random_flow_size nextTime mpath_sender_agent mpath_receiver_agent fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile simEndTime
+  global ns random_flow_size nextTime sender fidx randomFlowSize randomFlowInterval numFlow srcIndex dstIndex flowfile
   while {1} {
     set fsize [expr ceil([expr [$randomFlowSize value]])]
     if {$fsize > 0} {
       break;
     }
   }
+
   puts $flowfile "$nextTime $srcIndex($fidx) $dstIndex($fidx) $fsize"
-  $ns at $nextTime "$mpath_sender_agent($fidx) send-msg $fsize"
-  #$ns at [expr $nextTime+1] "$mpath_sender_agent($fidx) close"
-  #$ns at [expr $nextTime+1] "$mpath_receiver_agent($fidx) close"
+  $ns at $nextTime "$sender($fidx) advance-bytes $fsize"
+
   set nextTime [expr $nextTime+[$randomFlowInterval value]]
   set fidx [expr $fidx+1]
+
   if {$fidx < $numFlow} {
     $ns at $nextTime "sendBytes"
   }
+  //puts $nextTime
+  //puts " "
+  //puts " "
 }
 
 $ns at 0.0 "puts \"Simulation starts!\""
