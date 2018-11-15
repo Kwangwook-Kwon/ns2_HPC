@@ -388,12 +388,12 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       int sent_bytes;
       if(mp_sender_state_ == MP_SENDER_CREDIT_REQUEST_SENT)
         mp_sender_state_ = MP_SENDER_CREDIT_RECEIVING;
-      printf("remain_bytes %d, state : %d substate : %d  %fl\n",remain_bytes_, mp_sender_state_,subflows_[id].xpass_-> credit_recv_state_, now() );
-      if (mp_sender_state_ == MP_SENDER_CREDIT_RECEIVING &&remain_bytes_ <= subflows_[id].xpass_-> max_segment())
-          //(subflows_[id].xpass_-> credit_recv_state_ == XPASS_RECV_CREDIT_STOP_SENT)||(subflows_[id].xpass_-> credit_recv_state_ == XPASS_RECV_CLOSE_WAIT) )
+      
+      if (mp_sender_state_ == MP_SENDER_CREDIT_RECEIVING && subflows_[id].xpass_-> check_stop(remain_bytes_))
       {
         printf("Triggerd!!!!!! %d :: %fl\n", id, now());
         mp_sender_state_ = MP_SENDER_CREDIT_STOP_SENT;
+        subflows_[find_low_rtt()].xpass_ -> credit_stop_timer_.sched(0);
         for (int i = 0; i < sub_num_; i++)
         {
           subflows_[i].xpass_->credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
@@ -728,4 +728,15 @@ double MptcpAgent::get_xpass_rtt()
     rtt = subflows_[i].xpass_->get_rtt();
   }
   return rtt;
+}
+
+int MptcpAgent::find_low_rtt()
+{
+  double rtt = 9999;
+  int id;
+  if(subflows_[i].xpass_->get_rtt()<rtt){
+    id = i;
+    rtt = subflows_[i].xpass_->get_rtt();
+  }
+  return id;
 }

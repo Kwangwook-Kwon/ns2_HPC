@@ -127,6 +127,7 @@ public:
   inline void   set_active(){is_active_ = true;};
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
+  bool check_stop();
 
 protected:
   virtual void delay_bind_init_all();

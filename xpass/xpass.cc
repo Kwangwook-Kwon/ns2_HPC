@@ -331,7 +331,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
       }
     }
 
-    if (remain_bytes <= max_segment())
+/*    if (remain_bytes <= max_segment())
     {
       if (credit_stop_timer_.status() != TIMER_IDLE)
       {
@@ -342,7 +342,6 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
       // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
       credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
       credit_stop_timer_.sched(0);
-        printf(" stop 111111!!!  %fl\n",now());
     }
     else if (now() - last_credit_recv_update_ >= rtt_)
     {
@@ -362,7 +361,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
       }
       credit_recved_rtt_ = 0;
       last_credit_recv_update_ = now();
-    }
+    }*/
     break;
   case XPASS_RECV_CREDIT_STOP_SENT:
     if (send_datalen  > 0)
@@ -860,4 +859,37 @@ printf("Credit_feedback_control()::rtt_             : %lf\n", rtt_);
 printf("Credit_feedback_control()::w_               : %lf\n", w_);
 printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 */
+}
+
+bool XpassAgent::check_stop(int remain_bytes){
+  if (remain_bytes <= max_segment())
+    {
+      if (credit_stop_timer_.status() != TIMER_IDLE)
+      {
+        fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
+        exit(1);
+      }
+      // Because ns2 does not allow sending two consecutive packets,
+      // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+      return true;
+    }
+    else if (now() - last_credit_recv_update_ >= rtt_)
+    {
+      if (credit_recved_rtt_ >= (1 * remain_bytes))
+      {
+        // Early credit stop
+        if (credit_stop_timer_.status() != TIMER_IDLE)
+        {
+          fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
+          exit(1);
+        }
+        // Because ns2 does not allow sending two consecutive packets,
+        // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+        printf("Earl stop!!!  %fl\n",now());
+        return true;
+      }
+      credit_recved_rtt_ = 0;
+      last_credit_recv_update_ = now();
+    }
+    return false;
 }
