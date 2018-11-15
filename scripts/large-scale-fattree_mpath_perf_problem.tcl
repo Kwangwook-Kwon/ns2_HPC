@@ -279,8 +279,8 @@ for {set i 0} {$i < $numFlow} {incr i} {
   $mpath_sender_agent($i) set is_sender_ 1
   $mpath_receiver_agent($i) set fid_ $i
 
-  if { srcAggrIndex == dstAggrIndex } {
-    if { srcTorIndex == dstTorIndex } {
+  if { $srcAggrIndex == $dstAggrIndex } {
+    if { $srcTorIndex == $dstTorIndex } {
       $mpath_sender_agent($i) set K 1
     }
     $mpath_sender_agent($i) set K 2
