@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 100000
+set numFlow 1
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -84,28 +84,9 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
-Agent/MPTCP set K $K
-
-Agent/XPass set min_credit_size_ $minCreditSize
-Agent/XPass set max_credit_size_ $maxCreditSize
-Agent/XPass set min_ethernet_size_ $minEthernetSize
-Agent/XPass set max_ethernet_size_ $maxEthernetSize
-Agent/XPass set max_credit_rate_ $creditBW
-Agent/XPass set alpha_ $alpha
-Agent/XPass set target_loss_scaling_ 0.125
-Agent/XPass set w_init_ $w_init
-Agent/XPass set min_w_ 0.01
-Agent/XPass set retransmit_timeout_ 0.0001
-Agent/XPass set min_jitter_ $minJitter
-Agent/XPass set max_jitter_ $maxJitter
-
-Queue/XPassDropTail set credit_limit_ $creditBuffer
-#Queue/XPassDropTail set control_q_limit_ $controlBuffer
-Queue/XPassDropTail set max_tokens_ $maxCreditBurst
-Queue/XPassDropTail set token_refresh_rate_ $creditBW
 
 DelayLink set avoidReordering_ true
 $ns rtproto DV
@@ -189,7 +170,6 @@ for {set i 0} {$i < $numNode} {incr i} {
   set dcNode($i) [$ns node]
   $dcNode($i) set nodetype_ 1
 }
-
 for {set i 0} {$i < $numNode} {incr i} {
   for {set j 0} {$j < $numCore} {incr j} {
     set dcSubNode($i,$j) [$ns node]
@@ -285,25 +265,25 @@ for {set i 0} {$i < $numFlow} {incr i} {
   $mpath_receiver_agent($i) set fid_ $i
 
   if { $srcAggrIndex == $dstAggrIndex } {
-    $mpath_sender_agent($i) set K 2
     if { $srcTorIndex == $dstTorIndex } {
       $mpath_sender_agent($i) set K 1
     }
+    $mpath_sender_agent($i) set K 2
   }
 
   for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfAgent_sender($i,$j) [new Agent/XPass]
+    set SubfAgent_sender($i,$j) [new Agent/TCP/FullTcp/Sack/Multipath]
     $SubfAgent_sender($i,$j) set fid_ $j
     $SubfAgent_sender($i,$j) set host_id_ $src_nodeid
     $ns attach-agent $dcSubNode($src_nodeid,$j)  $SubfAgent_sender($i,$j)
-    $mpath_sender_agent($i) attach-xpass $SubfAgent_sender($i,$j) 
+    $mpath_sender_agent($i) attach-tcp $SubfAgent_sender($i,$j) 
   }
   for {set j 0} {$j < [expr $N]} {incr j} {
-    set SubfAgent_receiver($i,$j) [new Agent/XPass]
+    set SubfAgent_receiver($i,$j) [new Agent/TCP/FullTcp/Sack/Multipath]
     $SubfAgent_receiver($i,$j) set fid_ $j
     $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
     $ns attach-agent $dcSubNode($dst_nodeid,$j)  $SubfAgent_receiver($i,$j)
-    $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
+    $mpath_receiver_agent($i) attach-tcp $SubfAgent_receiver($i,$j) 
   }
 
   $ns multihome-attach-agent $dcNode($src_nodeid) $mpath_sender_agent($i)
@@ -315,6 +295,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
 
   set srcIndex($i) $src_nodeid
   set dstIndex($i) $dst_nodeid
+  $mpath_receiver_agent($i) listen
 }
 puts $dcNode($dst_nodeid)
 
@@ -339,6 +320,7 @@ proc sendBytes {} {
   if {$fidx < $numFlow} {
     $ns at $nextTime "sendBytes"
   }
+  puts $fsize
 }
 
 $ns at 0.0 "puts \"Simulation starts!\""

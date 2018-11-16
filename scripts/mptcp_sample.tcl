@@ -70,12 +70,12 @@ set r3 [$ns node]
 set r4 [$ns node]
 
 $ns duplex-link $n0_0 $r1 10Mb 5ms DropTail
-$ns duplex-link $r1 $r3   1Mb 5ms DropTail
+$ns duplex-link $r1 $r3 1Mb 5ms RED
 $ns queue-limit $r1 $r3 30
 $ns duplex-link $n1_0 $r3 10Mb 5ms DropTail
 
 $ns duplex-link $n0_1 $r2 10Mb 5ms DropTail
-$ns duplex-link $r2 $r4   1Mb 5ms DropTail
+$ns duplex-link $r2 $r4 1Mb 5ms RED
 $ns queue-limit $r2 $r4 30
 $ns duplex-link $n1_1 $r4 10Mb 5ms DropTail
 
@@ -158,29 +158,6 @@ proc finish {} {
 	close $f
 	close $nf
 
-    set awkcode {
-        {
-           if ($1 == "r" && NF == 20) {  
-             if ($3 == "1" && $4 == "10" && $5 == "tcp") { 
-               print $2, $18 >> "mptcp"
-             } 
-             if ($3 == "2" && $4 == "11" && $5 == "tcp") { 
-               print $2, $18 >> "mptcp"
-             } 
-           }
-           if ($1 == "r" && NF == 17) {  
-             if ($3 == "6" && $4 == "10" && $5 == "tcp") { 
-               print $2, $11 >> "normal-tcp1"
-             } 
-             if ($3 == "8" && $4 == "11" && $5 == "tcp") { 
-               print $2, $11 >> "normal-tcp2"
-             } 
-          }
-        }
-    } 
-	exec rm -f mptcp normal-tcp1 normal-tcp2
-    exec awk $awkcode out.tr
-    exec xgraph -M -m -nl mptcp normal-tcp1 normal-tcp2 
 	exit
 }
 

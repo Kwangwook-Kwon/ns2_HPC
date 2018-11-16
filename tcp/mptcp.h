@@ -106,7 +106,7 @@ class MptcpAgent:public Agent
 {
   friend class XcpEndsys;
   friend class MP_FCTTimer;
-  virtual void sendmsg (int nbytes, const char *flags = 0);
+  virtual void sendmsg (seq_t nbytes, const char *flags = 0);
 public:
     MptcpAgent ();
    ~MptcpAgent ()
@@ -171,7 +171,9 @@ protected:
   int act_sub_num_;
   int primary_subflow_;
   double fst_;
-  double fct_;
+  double fct_data_;
+  double fct_stop_;
+  double fct_mptcp_;
   double default_credit_stop_timeout_;
   double totalcwnd_;
   double alpha_;
