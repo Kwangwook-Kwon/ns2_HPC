@@ -9,16 +9,25 @@ Quick Start:
     cd ns-allinone-2.35
     rm -rf ns-2.35
   3. Clone this git repository and change the directory name to 'ns-2.35'
-    git clone https://github.com/kaist-ina/ns2-xpass.git
-    mv ns2-xpass ns-2.35
+    git clone https://github.com/Kwangwook-Kwon/ns2_HPC.git
+    mv ns2_HPC ns-2.35
   4. Configure & compile the codes
     ./install
+    if it fails, need to install aditional programs
+     sudo apt install libx11-dev
+     sudo apt-get install xorg-dev
   5. Now you can run sample scripts in ns-2.35 directory
     cd ns-2.35
     ./ns scripts/simple-send-recv.tcl
   6. Output file (trace file and flow completion time) is available in outputs directory.
     vim outputs/fct.out
     vim outputs/trace.out
+    vim outputs/mp_ftc.out
+    vim outputs/mp_wast.out
 
-More experiment scripts will be updtated soon.
-If you have any question, please contact Inho Cho (inhojoe@gmail.com)
+
+Current Main script
+ 1. MPATH-Credit
+    large-scale-fattree_mpath_perf_problem.tcl
+ 2. XPASS
+    large-scale-fattree_xpass.tcl
