@@ -78,7 +78,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-$ns trace-all $nt
+#$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
