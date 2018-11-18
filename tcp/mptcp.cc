@@ -237,7 +237,6 @@ int MptcpAgent::command(int argc, const char *const *argv)
     else if (strcmp(argv[1], "send-msg") == 0)
     {
       seq_t msg_len = atol(argv[2]);
-      printf("%ld\n", msg_len);
       if (msg_len <= 0)
       {
         return (TCL_ERROR);
@@ -332,7 +331,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
   }
   if (is_xpass == false)
   {
-    if ((mptcp_flag & TH_ACK) && (fst_ == -1))
+    if ((mptcp_flag & TH_SYN) && (fst_ == -1))
     {
       fst_ = now();
     }
@@ -509,6 +508,7 @@ bool MptcpAgent::check_routable(int sid, int addr, int port)
 
 void MptcpAgent::sendmsg(seq_t nbytes, const char * /*flags */)
 {
+	// printf("nbytes :%d, remain_bytes: %d, total_bytes %d\n", nbytes, remain_bytes_, total_bytes_);
   if (nbytes == -1)
   {
     infinite_send_ = true;
@@ -544,7 +544,7 @@ void MptcpAgent::send_xpass()
  */
 void MptcpAgent::send_control()
 {
-  printf("Total bytes : %lld\n", total_bytes_);
+  // printf("Total bytes 1: %lld\n", total_bytes_);
   if (total_bytes_ > 0 || infinite_send_)
   {
     /* one round */
@@ -587,25 +587,27 @@ void MptcpAgent::send_control()
       }
       seq_t sendbytes = cwnd - outstanding;
       seq_t sentbytes = 0;
-      printf("sendbytes : %lld, mss: %d, min : %d\n", sendbytes, mss, min(sendbytes, mss) );
-      //if (sendbytes < mss)
-      //  continue;
+			seq_t minbytes = 0;
+      if (sendbytes < mss)
+        continue;
       if (sendbytes > total_bytes_)
         sendbytes = total_bytes_;
 
+ //     printf("sendbytes : %lld, mss: %d, min : %d\n", sendbytes, mss, min(sendbytes, mss) );
       //if (sendbytes > mss) sendbytes = mss;
       while (sendbytes > 0)
       {
-        subflows_[i].tcp_->mptcp_add_mapping(mcurseq_, min(sendbytes, mss));
-        subflows_[i].tcp_->sendmsg(min(sendbytes, mss));
-        mcurseq_ += min(sendbytes, mss);
-        sendbytes -= min(sendbytes, mss);
-        sentbytes += min(sendbytes, mss);
+				minbytes = sendbytes < mss? sendbytes: mss;
+        subflows_[i].tcp_->mptcp_add_mapping(mcurseq_, minbytes);
+        subflows_[i].tcp_->sendmsg(minbytes);
+        mcurseq_ += minbytes;
+        sendbytes -= minbytes;
+        sentbytes +=  minbytes; // min(sendbytes, mss);
       }
 
       if (!infinite_send_){
         total_bytes_ -= sentbytes;
-        printf("sentbytes : %lld\n",sentbytes );
+//        printf("sentbytes : %lld %lld %lld\n",sentbytes,minbytes,min(sendbytes, mss) );
       }
 #if 0
             if (!slow_start) {
@@ -622,6 +624,7 @@ void MptcpAgent::send_control()
 #endif
     }
   }
+//  printf("Total bytes 2: %lld\n", total_bytes_);
 }
 
 /*
@@ -770,3 +773,6 @@ int MptcpAgent::find_low_rtt()
   }
   return id;
 }
+
+
+

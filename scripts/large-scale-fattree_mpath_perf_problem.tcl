@@ -3,8 +3,8 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 100000
-set workload "cachefollower" ;# cachefollower, mining, search, webserver
+set numFlow 1024
+set workload "mining" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
 #
@@ -35,7 +35,7 @@ set K [expr $N/2];
 #
 set alpha 0.5
 set w_init 0.0625
-set creditBuffer [expr 84*4]
+set creditBuffer [expr 84*8]
 set maxCreditBurst [expr 84*2]
 set minJitter -0.1
 set maxJitter 0.1
@@ -59,20 +59,20 @@ set simEndTime 60
 file mkdir "outputs"
 set mpath_fct_data [open "outputs/mp_fct_data.out" w]
 set mpath_fct_stop [open "outputs/mp_fct_stop.out" w]
-set mptcp_fct_ [open "outputs/mptcp_fct.out" w]
+set mpath_fct_ [open "outputs/mp_fct.out" w]
 set nt [open "outputs/trace.out" w]
 set fct_out [open "outputs/fct.out" w]
 set wst_out [open "outputs/mp_waste.out" w]
 puts $fct_out "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $mpath_fct_data "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $mpath_fct_stop "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
-puts $mptcp_fct_ "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
+puts $mpath_fct_ "Flow ID,Flow Size (bytes),Flow Completion Time (secs)"
 puts $wst_out "Flow ID,Flow Size (bytes),Wasted Credit"
 close $fct_out
 close $wst_out
 close $mpath_fct_stop
 close $mpath_fct_data
-close $mptcp_fct_
+close $mpath_fct_
 
 set flowfile [open "outputs/flowfile.tr" w]
 
@@ -84,7 +84,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-#$ns trace-all $nt
+$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
@@ -284,12 +284,13 @@ for {set i 0} {$i < $numFlow} {incr i} {
   $mpath_sender_agent($i) set is_sender_ 1
   $mpath_receiver_agent($i) set fid_ $i
 
-  if { $srcAggrIndex == $dstAggrIndex } {
-    $mpath_sender_agent($i) set K 2
-    if { $srcTorIndex == $dstTorIndex } {
-      $mpath_sender_agent($i) set K 1
-    }
-  }
+
+ # if { $srcAggrIndex == $dstAggrIndex } {
+ #   $mpath_sender_agent($i) set K 2
+ #   if { $srcTorIndex == $dstTorIndex } {
+ #     $mpath_sender_agent($i) set K 1
+ #   }
+ # }
 
   for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfAgent_sender($i,$j) [new Agent/XPass]

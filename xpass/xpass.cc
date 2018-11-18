@@ -137,6 +137,8 @@ int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
   return Agent::delay_bind_dispatch(varName, localName, tracer);
 }
 
+
+
 void XPassAgent::init()
 {
   w_ = w_init_;
@@ -227,7 +229,7 @@ void XPassAgent::recv_credit_request(Packet *pkt)
     //printf("sendbuffer : %d\n", xph->sendbuffer_);
     //printf("Curent lalpha : %f\n",lalpha);
     cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
-    //fst_ = xph->credit_sent_time();
+    fst_ = now();//xph->credit_sent_time();
     // need to start to send credits.
     send_credit();
 
@@ -390,6 +392,7 @@ void XPassAgent::recv_data(Packet *pkt)
   if (fst_ == -1)
   {
     fst_ = now();
+    fprintf(stderr, "start fct from first data--------------------------------------\n");
   }
   fct_ = now() - fst_;
   hdr_xpass *xph = hdr_xpass::access(pkt);
