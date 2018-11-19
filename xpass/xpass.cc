@@ -47,6 +47,11 @@ void FCTTimer::expire(Event *)
   a_->handle_fct();
 }
 
+/*
+void XPassAgent::mptcp_set_core(MptcpAgent * core){
+
+	mptcp_core_ = core;
+}*/
 void XPassAgent::delay_bind_init_all()
 {
   delay_bind_init_one("max_credit_rate_");
@@ -66,6 +71,11 @@ void XPassAgent::delay_bind_init_all()
   Agent::delay_bind_init_all();
 }
 
+void
+XPassAgent::trace(TracedVar* v){
+
+	Agent::trace(v);
+}
 int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
                                     TclObject *tracer)
 {
@@ -804,7 +814,8 @@ void XPassAgent::credit_feedback_control()
   double loss_rate = credit_dropped_ / (double)credit_total_;
   double target_loss = (1.0 - cur_credit_rate_ / (double)max_credit_rate_) * target_loss_scaling_;
   int min_rate = (int)(avg_credit_size() / rtt_);
-
+  double temp;
+  double temp_final;
   if (loss_rate > target_loss)
   {
     // congestion has been detected!
@@ -820,16 +831,30 @@ void XPassAgent::credit_feedback_control()
     {
       cur_credit_rate_ = old_rate;
     }
+    	//original
+	w_ = max(w_ / 2.0, min_w_);
 
-    w_ = max(w_ / 2.0, min_w_);
-    can_increase_w_ = false;
+	//stcp
+	//w_ = max(w_ - w_*0.125, min_w_);
+    
+    	can_increase_w_ = false;
   }
   else
   {
     // there is no congestion.
     if (can_increase_w_)
     {
-      w_ = min(w_ + 0.05, 0.5);
+      	//ewtcp
+	temp = 0.70710678118*w_;
+      	temp_final = (temp+1)*w_;
+
+      	w_ = min(temp_final, 0.5);
+
+	//original
+	//w_ = min(w_+0.05,0.5);
+
+	//stcp
+	//w_ = min(w_+0.01, 0.5);
     }
     else
     {

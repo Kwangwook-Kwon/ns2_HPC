@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 10
+set numFlow 1024
 set workload "mining" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -35,7 +35,7 @@ set K [expr $N/2];
 #
 set alpha 0.5
 set w_init 0.0625
-set creditBuffer [expr 84*4]
+set creditBuffer [expr 84*8]
 set maxCreditBurst [expr 84*2]
 set minJitter -0.1
 set maxJitter 0.1
@@ -264,12 +264,6 @@ for {set i 0} {$i < $numFlow} {incr i} {
   $mpath_sender_agent($i) set is_sender_ 1
   $mpath_receiver_agent($i) set fid_ $i
 
-  if { $srcAggrIndex == $dstAggrIndex } {
-    if { $srcTorIndex == $dstTorIndex } {
-      $mpath_sender_agent($i) set K 1
-    }
-    $mpath_sender_agent($i) set K 2
-  }
 
   for {set j 0} {$j < [expr $N]} {incr j} {
     set SubfAgent_sender($i,$j) [new Agent/TCP/FullTcp/Sack/Multipath]

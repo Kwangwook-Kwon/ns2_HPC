@@ -101,6 +101,8 @@ class XPassAgent: public Agent {
   friend class FCTTimer;
   friend class MptcpAgent;
 public:
+
+  //MptcpAgent *mptcp_core_;
   XPassAgent(): Agent(PT_XPASS_DATA), credit_send_state_(XPASS_SEND_CLOSED),
                 credit_recv_state_(XPASS_RECV_CLOSED), last_credit_rate_update_(-0.0),
                 credit_total_(0), credit_dropped_(0), can_increase_w_(false),
@@ -128,11 +130,17 @@ public:
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
   bool check_stop(int);
+  //void mptcp_set_core (MptcpAgent *);
+  //double xpass_get_cwnd ()
+  //{
+   // return w_;
+  //}
 
 protected:
   virtual void delay_bind_init_all();
   virtual int delay_bind_dispatch(const char *varName, const char *localName, TclObject *tracer);
 
+  virtual void trace(TracedVar* v);
   // credit send state
   XPASS_SEND_STATE credit_send_state_;
   // credit receive state

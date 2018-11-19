@@ -219,7 +219,7 @@ int MptcpAgent::command(int argc, const char *const *argv)
       subflows_[id].is_xpass = true;
       subflows_[id].addr_ = subflows_[id].xpass_->addr();
       subflows_[id].port_ = subflows_[id].xpass_->port();
-      //subflows_[id].tcp_->mptcp_set_core (this);
+      //subflows_[id].xpass_->xpass_set_core (this);
       sub_num_++;
       is_xpass = true;
       return (TCL_OK);
