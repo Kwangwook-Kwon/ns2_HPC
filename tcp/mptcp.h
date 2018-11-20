@@ -48,6 +48,12 @@ typedef enum MP_SENDER_STATE_ {
   MP_SENDER_NSTATE,
 } MP_SENDER_STATE;
 
+typedef enum MP_RECV_STATE_ {
+  MP_RECV_CLOSED=1,
+  MP_RECV_CREDIT_SENDING,
+  MP_RECV_FINISHED,
+} MP_RECV_STATE;
+
 class MptcpAgent;
 
 class MP_FCT_Timer: public TimerHandler {
@@ -138,6 +144,7 @@ public:
   void handle_waste();
   int find_low_rtt();
   MP_SENDER_STATE mp_sender_state_;
+  MP_RECV_STATE mp_recv_state_;
 
 protected:
   virtual void delay_bind_init_all();

@@ -59,7 +59,7 @@ void MP_Waste_Timer::expire(Event *)
 
 MptcpAgent::MptcpAgent() : Agent(PT_TCP), is_xpass(false), sub_num_(0), remain_bytes_(0), total_bytes_(0),
                            mcurseq_(1), mackno_(1), infinite_send_(false), remain_buffer_(0), fct_mptcp_(-1),
-                                                                                                  fid_(-1),
+                                                                               mp_recv_state_(MP_RECV_CLOSED),fid_(-1),
                            dst_num_(0), fct_data_(-1), fct_stop_(-1), fst_(-1), mp_sender_state_(MP_SENDER_CLOSED),
                            K(100), act_sub_num_(0), credit_wasted(-1), is_sender_(0), flow_size_(0)
 {
@@ -391,6 +391,12 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       //if(fst_ == 0){
       //  fst_ = xph -> credit_sent_time();
       //}
+      if(mp_recv_state_ == MP_RECV_FINISHED ||  mp_recv_state_ == MP_RECV_CREDIT_SENDING ){
+        Packet::free(pkt);
+        break;
+      }
+      if(mp_recv_state_ == MP_RECV_CLOSED)
+        mp_recv_state_ = MP_RECV_CREDIT_SENDING;
       if (fst_ == -1)
       {
         fst_ = now();
@@ -402,8 +408,13 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       break;
     case PT_XPASS_CREDIT:
       int sent_bytes;
-      if (mp_sender_state_ == MP_SENDER_CREDIT_REQUEST_SENT)
+      if (mp_sender_state_ == MP_SENDER_CREDIT_REQUEST_SENT){
         mp_sender_state_ = MP_SENDER_CREDIT_RECEIVING;
+        if(id!=primary_subflow_){
+          subflows_[primary_subflow_].xpass_ -> sender_retransmit_timer_.force_cancel();
+          subflows_[primary_subflow_].xpass_ -> credit_recv_state_ = XPASS_RECV_CREDIT_RECEIVING;
+        }
+      }
 
       if (mp_sender_state_ == MP_SENDER_CREDIT_RECEIVING && subflows_[id].xpass_->check_stop(remain_bytes_))
       {
@@ -416,10 +427,7 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
               subflows_[i].xpass_->rtt_ > 0 ? (2. * subflows_[i].xpass_->rtt_) : subflows_[i].xpass_->default_credit_stop_timeout_);
         }
       }
-      if (subflows_[primary_subflow_].xpass_->credit_recv_state_ == XPASS_RECV_CREDIT_REQUEST_SENT)
-      {
-        subflows_[primary_subflow_].xpass_->sender_retransmit_timer_.force_cancel();
-      }
+
       if (subflows_[id].xpass_->get_is_active() == true)
       {
         sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
@@ -453,6 +461,8 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       subflows_[id].xpass_->recv_data(pkt);
       break;
     case PT_XPASS_CREDIT_STOP:
+      if(mp_recv_state_ == MP_RECV_CREDIT_SENDING)
+        mp_recv_state_ = MP_RECV_FINISHED;
       fct_stop_ = now() - fst_;
       for (int i = 0; i < sub_num_; i++)
       {
