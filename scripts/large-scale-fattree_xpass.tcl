@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #
-set numFlow 100000
+set numFlow 1024
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 

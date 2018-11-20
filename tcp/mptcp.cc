@@ -53,6 +53,7 @@ void MP_FCT_Timer::expire(Event *)
 
 void MP_Waste_Timer::expire(Event *)
 {
+
   a_->handle_waste();
 }
 
@@ -728,7 +729,13 @@ void MptcpAgent::set_dataack(int ackno, int length)
 void MptcpAgent::handle_fct()
 {
   FILE *fct_out_data = fopen("outputs/mp_fct_data.out", "a");
-  fprintf(fct_out_data, "%d,%lld,%.10lf\n", fid_, flow_size_, fct_data_);
+  int credit_totaldropped = 0;
+  for(int i =0; i< sub_num_; i++){
+    credit_totaldropped += subflows_[i].xpass_->get_credit_total_dropped();
+
+  }
+
+  fprintf(fct_out_data, "%d,%lld,%.10lf,%d\n", fid_, flow_size_, fct_data_,credit_totaldropped);
   fclose(fct_out_data);
 
   FILE *fct_out_stop = fopen("outputs/mp_fct_stop.out", "a");

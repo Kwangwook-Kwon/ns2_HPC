@@ -46,12 +46,6 @@ void FCTTimer::expire(Event *)
 {
   a_->handle_fct();
 }
-
-/*
-void XPassAgent::mptcp_set_core(MptcpAgent * core){
-
-	mptcp_core_ = core;
-}*/
 void XPassAgent::delay_bind_init_all()
 {
   delay_bind_init_one("max_credit_rate_");
@@ -76,6 +70,7 @@ XPassAgent::trace(TracedVar* v){
 
 	Agent::trace(v);
 }
+
 int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
                                     TclObject *tracer)
 {
@@ -411,6 +406,7 @@ void XPassAgent::recv_data(Packet *pkt)
     send_credit_timer_.force_cancel();
     credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
   }
+
   // distance between expected sequence number and actual sequence number.
   int distance = xph->credit_seq() - c_recv_next_;
 
@@ -422,7 +418,7 @@ void XPassAgent::recv_data(Packet *pkt)
   }
   credit_total_ += (distance + 1);
   credit_dropped_ += distance;
-
+  credit_total_dropped_ += distance;
   c_recv_next_ = xph->credit_seq() + 1;
 
   process_ack(pkt);
@@ -845,13 +841,13 @@ void XPassAgent::credit_feedback_control()
     if (can_increase_w_)
     {
       	//ewtcp
-	temp = 0.70710678118*w_;
-      	temp_final = (temp+1)*w_;
+	//temp = 0.70710678118*w_;
+      	//temp_final = (temp+1)*w_;
 
-      	w_ = min(temp_final, 0.5);
+      	//w_ = min(temp_final, 0.5);
 
 	//original
-	//w_ = min(w_+0.05,0.5);
+	w_ = min((w_*0.5+0.25),0.5);
 
 	//stcp
 	//w_ = min(w_+0.01, 0.5);
@@ -865,7 +861,6 @@ void XPassAgent::credit_feedback_control()
       cur_credit_rate_ = (int)(w_ * max_credit_rate_ + (1 - w_) * cur_credit_rate_);
     }
   }
-
   if (cur_credit_rate_ > max_credit_rate_)
   {
     cur_credit_rate_ = max_credit_rate_;

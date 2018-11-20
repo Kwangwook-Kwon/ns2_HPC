@@ -111,7 +111,7 @@ public:
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
                 c_seqno_(1), c_recv_next_(1), rtt_(-0.0),remain_bytes_(0), is_active_(false),
                 credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
-                credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0) { }
+                credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0), credit_total_dropped_(0) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);
   inline double now() { return Scheduler::instance().clock(); }
@@ -129,6 +129,7 @@ public:
   inline void   set_active(){is_active_ = true;};
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
+  inline int get_credit_total_dropped(){return credit_total_dropped_;};
   bool check_stop(int);
   //void mptcp_set_core (MptcpAgent *);
   //double xpass_get_cwnd ()
@@ -181,6 +182,7 @@ protected:
   int credit_total_;
   // number of credit dropped.
   int credit_dropped_;
+  int credit_total_dropped_;
   // aggressiveness factor
   // it determines how aggressively increase the credit sending rate.
   double w_;
