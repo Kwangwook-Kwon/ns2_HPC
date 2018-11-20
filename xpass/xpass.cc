@@ -452,7 +452,7 @@ void XPassAgent::recv_credit_stop(Packet *pkt)
 {
   //fct_ = now() - fst_;
   //fct_timer_.resched(default_credit_stop_timeout_);
-  //send_credit_timer_.force_cancel();
+  send_credit_timer_.force_cancel();
   credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
 }
 
