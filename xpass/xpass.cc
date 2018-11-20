@@ -170,6 +170,11 @@ int XPassAgent::command(int argc, const char *const *argv)
       //on_transmission_ = false;
       return TCL_OK;
     }
+    else if (strcmp(argv[1], "close") == 0)
+    {
+      handle_fct();
+      return TCL_OK;
+    }
   }
   else if (argc == 3)
   {
@@ -450,8 +455,8 @@ void XPassAgent::recv_nack(Packet *pkt)
 void XPassAgent::recv_credit_stop(Packet *pkt)
 {
   //fct_ = now() - fst_;
-  fct_timer_.resched(default_credit_stop_timeout_);
-  send_credit_timer_.force_cancel();
+  //fct_timer_.resched(default_credit_stop_timeout_);
+  //send_credit_timer_.force_cancel();
   credit_send_state_ = XPASS_SEND_CLOSE_WAIT;
 }
 
