@@ -5,8 +5,11 @@
 #include "packet.h"
 #include "tcp.h"
 #include "template.h"
+//#include "mptcp.h"
 #include <assert.h>
 #include <math.h>
+
+class MptcpAgent;
 
 typedef enum XPASS_SEND_STATE_ {
   XPASS_SEND_CLOSED=1,
@@ -46,6 +49,8 @@ struct hdr_xpass {
   inline static hdr_xpass* access(const Packet* p) {
     return (hdr_xpass*)p->access(offset_);
   }
+
+  int reset_;
 
   /* per-field member access functions */
   double& credit_sent_time() { return (credit_sent_time_); }
@@ -105,12 +110,12 @@ public:
   //MptcpAgent *mptcp_core_;
   XPassAgent(): Agent(PT_XPASS_DATA), credit_send_state_(XPASS_SEND_CLOSED),
                 credit_recv_state_(XPASS_RECV_CLOSED), last_credit_rate_update_(-0.0),
-                credit_total_(0), credit_dropped_(0), can_increase_w_(false),
-                send_credit_timer_(this), credit_stop_timer_(this), 
-                sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
-                fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
+                credit_total_(0), credit_dropped_(0), can_increase_w_(false),reset_(0),
+                send_credit_timer_(this), credit_stop_timer_(this), recv_data_(0),
+                sender_retransmit_timer_(this), receiver_retransmit_timer_(this),reset_count_(0),
+                fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),congestion_(0),
                 c_seqno_(1), c_recv_next_(1), rtt_(-0.0),remain_bytes_(0), is_active_(false),
-                credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
+                credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),mp_agent_(NULL),
                 credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0), credit_total_dropped_(0) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);
@@ -130,12 +135,18 @@ public:
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
   inline int get_credit_total_dropped(){return credit_total_dropped_;};
+  inline seq_t get_recv_data(){return recv_data_;};
+  int reset_count_;
   bool check_stop(int);
+  void send_one_credit();
+  MptcpAgent* mp_agent_;
+  inline void set_mp_agent(MptcpAgent* agent){mp_agent_ = agent;}
   //void mptcp_set_core (MptcpAgent *);
   //double xpass_get_cwnd ()
   //{
    // return w_;
   //}
+  int reset_;
 
 protected:
   virtual void delay_bind_init_all();
@@ -198,6 +209,9 @@ protected:
   double min_jitter_;
   //represent subflow state
   bool is_active_;
+  //detecting congestion
+  int congestion_;
+
 
   SendCreditTimer send_credit_timer_;
   CreditStopTimer credit_stop_timer_;
@@ -217,6 +231,8 @@ protected:
   seq_t c_recv_next_;
   //Total send Bytes on Mpath agent
   seq_t remain_bytes_;
+
+  seq_t recv_data_;
 
   // weighted-average round trip time
   double rtt_;

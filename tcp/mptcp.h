@@ -1,3 +1,6 @@
+#ifndef _TCP_MPTCP_H_
+#define _TCP_MPTCP_H_
+
 /*
  * Copyright (C) 2011 WIDE Project.  All rights reserved.
  *
@@ -43,6 +46,7 @@ typedef enum MP_SENDER_STATE_ {
   MP_SENDER_CLOSED=1,
   MP_SENDER_CLOSE_WAIT,
   MP_SENDER_CREDIT_REQUEST_SENT,
+  MP_SENDER_PATH_RESET,
   MP_SENDER_CREDIT_RECEIVING,
   MP_SENDER_CREDIT_STOP_SENT,
   MP_SENDER_NSTATE,
@@ -51,10 +55,11 @@ typedef enum MP_SENDER_STATE_ {
 typedef enum MP_RECV_STATE_ {
   MP_RECV_CLOSED=1,
   MP_RECV_CREDIT_SENDING,
+  MP_RECV_PATH_RESET,
   MP_RECV_FINISHED,
 } MP_RECV_STATE;
 
-class MptcpAgent;
+//class XpassAgent;
 
 class MP_FCT_Timer: public TimerHandler {
 public:
@@ -67,6 +72,22 @@ protected:
 class MP_Waste_Timer: public TimerHandler {
 public:
   MP_Waste_Timer(MptcpAgent *a): TimerHandler(), a_(a) { }
+protected:
+  virtual void expire(Event *);
+  MptcpAgent *a_;
+};
+
+class MP_Reset_Timer: public TimerHandler {
+public:
+  MP_Reset_Timer(MptcpAgent *a): TimerHandler(), a_(a) { }
+protected:
+  virtual void expire(Event *);
+  MptcpAgent *a_;
+};
+
+class MP_Reset_0_Timer: public TimerHandler {
+public:
+  MP_Reset_0_Timer(MptcpAgent *a): TimerHandler(), a_(a) { }
 protected:
   virtual void expire(Event *);
   MptcpAgent *a_;
@@ -112,6 +133,8 @@ class MptcpAgent:public Agent
 {
   friend class XcpEndsys;
   friend class MP_FCTTimer;
+  friend class XpassAgent;
+  friend class MP_Reset_0_Timer;
   virtual void sendmsg (seq_t nbytes, const char *flags = 0);
 public:
     MptcpAgent ();
@@ -138,13 +161,18 @@ public:
   }
   int command (int argc, const char *const *argv);
   void calculate_alpha ();
+  void recv_credit(Packet *,int);
   TracedInt curseq_;
   double get_xpass_rtt();
   void handle_fct();
   void handle_waste();
   int find_low_rtt();
+  void reset_subflows();
+  double reset_time_;
   MP_SENDER_STATE mp_sender_state_;
   MP_RECV_STATE mp_recv_state_;
+  MP_Reset_Timer mp_reset_timer;
+  MP_Reset_0_Timer mp_reset_0_timer;
 
 protected:
   virtual void delay_bind_init_all();
@@ -161,6 +189,7 @@ protected:
   Classifier *core_;
 
   bool infinite_send_;
+  seq_t input_flow_size_;
   seq_t credit_wasted;
   bool is_xpass;
   int is_sender_;
@@ -188,3 +217,5 @@ protected:
   struct dstinfo dsts_[MAX_SUBFLOW];
   vector < dack_mapping > dackmap_;
 };
+
+#endif

@@ -1,4 +1,5 @@
 #include "xpass.h"
+#include "mptcp.h"
 #include "ip.h"
 #include "../tcp/template.h"
 
@@ -62,13 +63,14 @@ void XPassAgent::delay_bind_init_all()
   delay_bind_init_one("default_credit_stop_timeout_");
   delay_bind_init_one("min_jitter_");
   delay_bind_init_one("max_jitter_");
+  delay_bind_init_one("reset_count_");
   Agent::delay_bind_init_all();
 }
 
-void
-XPassAgent::trace(TracedVar* v){
+void XPassAgent::trace(TracedVar *v)
+{
 
-	Agent::trace(v);
+  Agent::trace(v);
 }
 
 int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
@@ -139,10 +141,12 @@ int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
   {
     return TCL_OK;
   }
+  if (delay_bind(varName, localName, "rest_count_", &min_jitter_, tracer))
+  {
+    return TCL_OK;
+  }
   return Agent::delay_bind_dispatch(varName, localName, tracer);
 }
-
-
 
 void XPassAgent::init()
 {
@@ -220,11 +224,12 @@ void XPassAgent::recv(Packet *pkt, Handler *)
 
 void XPassAgent::recv_credit_request(Packet *pkt)
 {
+
   hdr_xpass *xph = hdr_xpass::access(pkt);
   switch (credit_send_state_)
   {
   case XPASS_SEND_CLOSE_WAIT:
-    fct_timer_.force_cancel();
+    //fct_timer_.force_cancel();
   case XPASS_SEND_CLOSED:
     double lalpha;
     init();
@@ -239,7 +244,8 @@ void XPassAgent::recv_credit_request(Packet *pkt)
     //printf("sendbuffer : %d\n", xph->sendbuffer_);
     //printf("Curent lalpha : %f\n",lalpha);
     cur_credit_rate_ = (int)(lalpha * max_credit_rate_);
-    fst_ = now();//xph->credit_sent_time();
+    fst_ = now(); //xph->credit_sent_time();
+    //printf("Credit_requset_recieved! FST : %lf\n", fst_);
     // need to start to send credits.
     send_credit();
 
@@ -343,7 +349,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
       }
     }
 
-/*    if (remain_bytes <= max_segment())
+    /*    if (remain_bytes <= max_segment())
     {
       if (credit_stop_timer_.status() != TIMER_IDLE)
       {
@@ -376,7 +382,7 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
     }*/
     break;
   case XPASS_RECV_CREDIT_STOP_SENT:
-    if (send_datalen  > 0)
+    if (send_datalen > 0)
     {
       send(construct_data(pkt), 0);
     }
@@ -399,8 +405,9 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
 
 void XPassAgent::recv_data(Packet *pkt)
 {
+  //printf("recv DATA!!! FST : %lf\n" , fst_);
   if (fst_ == -1)
-  {
+  { 
     fst_ = now();
     fprintf(stderr, "start fct from first data--------------------------------------\n");
   }
@@ -425,6 +432,7 @@ void XPassAgent::recv_data(Packet *pkt)
   credit_dropped_ += distance;
   credit_total_dropped_ += distance;
   c_recv_next_ = xph->credit_seq() + 1;
+  recv_data_ += xph->data_length_;
 
   process_ack(pkt);
   update_rtt(pkt);
@@ -499,7 +507,7 @@ void XPassAgent::handle_sender_retransmit()
       return;
     }
     // retransmit credit_stop
-      printf(" stop 222222!!!  %fl\n",now());
+    printf(" stop 222222!!!  %fl\n", now());
 
     send_credit_stop();
     break;
@@ -620,6 +628,7 @@ Packet *XPassAgent::construct_credit()
 
   xph->credit_sent_time() = now();
   xph->credit_seq() = c_seqno_;
+  xph->reset_ = reset_;
 
   c_seqno_ = max(1, c_seqno_ + 1);
 
@@ -709,6 +718,11 @@ void XPassAgent::send_credit()
   //printf("Send_credit()::delay            : %lf\n", delay);
   //printf("Send_credit()::avg_credit_size  : %lf\n", avg_credit_size );
   //printf("Send_credit()::cur_credit_rate  : %d\n", cur_credit_rate_ );
+}
+
+void XPassAgent::send_one_credit(){
+  printf("send one credit called!\n");
+  send(construct_credit(), 0);
 }
 
 void XPassAgent::send_credit_stop()
@@ -808,6 +822,7 @@ void XPassAgent::credit_feedback_control()
   }
   if (credit_total_ == 0)
   {
+
     return;
   }
 
@@ -819,7 +834,13 @@ void XPassAgent::credit_feedback_control()
   double temp_final;
   if (loss_rate > target_loss)
   {
-    // congestion has been detected!
+    congestion_++;
+    if (congestion_ >= reset_count_ && reset_count_ > 0)
+    {
+      congestion_ = 0;
+      //printf("reset subflow triggerd!\n");
+      mp_agent_->reset_subflows();
+    }
     if (loss_rate >= 1.0)
     {
       cur_credit_rate_ = (int)(avg_credit_size() / rtt_);
@@ -832,30 +853,31 @@ void XPassAgent::credit_feedback_control()
     {
       cur_credit_rate_ = old_rate;
     }
-    	//original
-	w_ = max(w_ / 2.0, min_w_);
+    //original
+    w_ = max(w_ / 2.0, min_w_);
 
-	//stcp
-	//w_ = max(w_ - w_*0.125, min_w_);
-    
-    	can_increase_w_ = false;
+    //stcp
+    //w_ = max(w_ - w_*0.125, min_w_);
+
+    can_increase_w_ = false;
   }
   else
   {
+    congestion_ = 0;
     // there is no congestion.
     if (can_increase_w_)
     {
-      	//ewtcp
-	//temp = 0.70710678118*w_;
-      	//temp_final = (temp+1)*w_;
+      //ewtcp
+      //temp = 0.70710678118*w_;
+      //temp_final = (temp+1)*w_;
 
-      	//w_ = min(temp_final, 0.5);
+      //w_ = min(temp_final, 0.5);
 
-	//original
-	w_ = min((w_*0.5+0.25),0.5);
+      //original
+      w_ = min((w_ * 0.5 + 0.25), 0.5);
 
-	//stcp
-	//w_ = min(w_+0.01, 0.5);
+      //stcp
+      //w_ = min(w_+0.01, 0.5);
     }
     else
     {
@@ -889,35 +911,36 @@ printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 */
 }
 
-bool XPassAgent::check_stop(int remain_bytes){
+bool XPassAgent::check_stop(int remain_bytes)
+{
   if (remain_bytes <= max_segment())
+  {
+    if (credit_stop_timer_.status() != TIMER_IDLE)
     {
+      fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
+      return false;
+    }
+    // Because ns2 does not allow sending two consecutive packets,
+    // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+    return true;
+  }
+  else if (now() - last_credit_recv_update_ >= rtt_)
+  {
+    if (credit_recved_rtt_ >= (1 * remain_bytes))
+    {
+      // Early credit stop
       if (credit_stop_timer_.status() != TIMER_IDLE)
       {
         fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
-        exit(1);
+         return false;
       }
       // Because ns2 does not allow sending two consecutive packets,
       // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
+      printf("Earl stop!!!  %fl\n", now());
       return true;
     }
-    else if (now() - last_credit_recv_update_ >= rtt_)
-    {
-      if (credit_recved_rtt_ >= (1 * remain_bytes))
-      {
-        // Early credit stop
-        if (credit_stop_timer_.status() != TIMER_IDLE)
-        {
-          fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
-          exit(1);
-        }
-        // Because ns2 does not allow sending two consecutive packets,
-        // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
-        printf("Earl stop!!!  %fl\n",now());
-        return true;
-      }
-      credit_recved_rtt_ = 0;
-      last_credit_recv_update_ = now();
-    }
-    return false;
+    credit_recved_rtt_ = 0;
+    last_credit_recv_update_ = now();
+  }
+  return false;
 }

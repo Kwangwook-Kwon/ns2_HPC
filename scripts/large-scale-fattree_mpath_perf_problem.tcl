@@ -4,7 +4,7 @@ set ns [new Simulator]
 # Flow configurations
 #cd ns
 set numFlow 10000
-set workload "webserver" ;# cachefollower, mining, search, webserver
+set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
 #
@@ -33,6 +33,7 @@ set K [expr $N/2];
 #
 # XPass configurations
 #
+set reset_count 8
 set alpha 0.5
 set w_init 0.0625
 set creditBuffer [expr 84*8]
@@ -84,7 +85,7 @@ proc finish {} {
   puts "Simulation terminated successfully."
   exit 0
 }
-$ns trace-all $nt
+#$ns trace-all $nt
 
 # Basic parameter settings
 Agent/MPTCP set K $K
@@ -105,7 +106,7 @@ Agent/XPass set max_jitter_ $maxJitter
 Queue/XPassDropTail set credit_limit_ $creditBuffer
 #Queue/XPassDropTail set control_q_limit_ $controlBuffer
 Queue/XPassDropTail set max_tokens_ $maxCreditBurst
-Queue/XPassDropTail set token_refresh_rate_ $creditBW
+Queue/XPassDropTail set token_refresh_rate_ [expr $creditBW*0.75]
 
 DelayLink set avoidReordering_ true
 $ns rtproto DV
@@ -268,11 +269,11 @@ for {set i 0} {$i < $numNode} {incr i} {
 puts "Creating agents ..."
 for {set i 0} {$i < $numFlow} {incr i} {
   #set src_nodeid [expr int([$randomSrcNodeId value])]
-  #set dst_nodeid [expr int([$randomDstNodeId value])]
+  set dst_nodeid [expr int([$randomDstNodeId value])]
   set src_nodeid 3
-  set dst_nodeid 34
+  #set dst_nodeid 34
   while {$src_nodeid == $dst_nodeid} {
-    set src_nodeid [expr int([$randomSrcNodeId value])]
+    #set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]
   }
   set srcTorIndex  [expr $src_nodeid/($numNode/$numTor)]
@@ -305,6 +306,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
     set SubfAgent_receiver($i,$j) [new Agent/XPass]
     $SubfAgent_receiver($i,$j) set fid_ $j
     $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
+    $SubfAgent_receiver($i,$j) set reset_count_ $reset_count
     $ns attach-agent $dcSubNode($dst_nodeid,$j)  $SubfAgent_receiver($i,$j)
     $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
   }
@@ -348,3 +350,4 @@ $ns at 0.0 "puts \"Simulation starts!\""
 $ns at $nextTime "sendBytes"
 $ns at [expr $simEndTime+1] "finish"
 $ns run
+
