@@ -64,6 +64,7 @@ void XPassAgent::delay_bind_init_all()
   delay_bind_init_one("min_jitter_");
   delay_bind_init_one("max_jitter_");
   delay_bind_init_one("reset_count_");
+  delay_bind_init_one("reset_count2_");
   Agent::delay_bind_init_all();
 }
 
@@ -141,7 +142,11 @@ int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
   {
     return TCL_OK;
   }
-  if (delay_bind(varName, localName, "rest_count_", &min_jitter_, tracer))
+  if (delay_bind(varName, localName, "reset_count_", &reset_count_, tracer))
+  {
+    return TCL_OK;
+  }
+  if (delay_bind(varName, localName, "reset_count2_", &reset_count2_, tracer))
   {
     return TCL_OK;
   }
@@ -326,8 +331,8 @@ void XPassAgent::recv_credit(Packet *pkt)
 seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
 {
   //printf("MAX Segment : %d \n", max_segment());
-  seq_t send_datalen = min(max_segment(), remain_bytes);
-  curseq_ += send_datalen;
+  int send_datalen = (max_segment() > remain_bytes) ?  remain_bytes : max_segment();
+  //printf("remain bytes :%d, send_datalen: %d State : %d\n" ,remain_bytes, send_datalen,credit_recv_state_ );
   credit_recved_rtt_++;
   switch (credit_recv_state_)
   {
@@ -341,12 +346,15 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
     // send data
     if (send_datalen > 0)
     {
+      curseq_ += send_datalen;
       send(construct_data(pkt), 0);
-      if (is_active_ == false)
+      /*if (is_active_ == false)
       {
         credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
-        sender_retransmit_timer_.resched(rtt_ > 0 ? (2. * rtt_) : default_credit_stop_timeout_);
-      }
+      }else{
+        credit_recv_state_ = XPASS_RECV_CREDIT_RECEIVING;
+        sender_retransmit_timer_.force_cancel();
+      }*/
     }
 
     /*    if (remain_bytes <= max_segment())
@@ -384,10 +392,12 @@ seq_t XPassAgent::recv_credit_mpath(Packet *pkt, int remain_bytes)
   case XPASS_RECV_CREDIT_STOP_SENT:
     if (send_datalen > 0)
     {
+      curseq_ += send_datalen;
       send(construct_data(pkt), 0);
     }
     else
     {
+      return 0;
       credit_wasted_++;
     }
     credit_recved_++;
@@ -502,7 +512,7 @@ void XPassAgent::handle_sender_retransmit()
 
       credit_recv_state_ = XPASS_RECV_CLOSED;
       sender_retransmit_timer_.force_cancel();
-      fprintf(waste_out, "%d,%ld,%d\n", fid_, curseq_ - 1, credit_wasted_);
+      fprintf(waste_out, "%lf,%d,%ld,%d\n", now(),fid_, curseq_ - 1, credit_wasted_);
       fclose(waste_out);
       return;
     }
@@ -666,8 +676,46 @@ Packet *XPassAgent::construct_data(Packet *credit)
   xph->credit_seq() = credit_xph->credit_seq();
   xph->data_length_ = datalen;
   xph->is_active = get_is_active();
+  //printf("data_length : %d\n", datalen);
 
   t_seqno_ += datalen;
+
+  return p;
+}
+
+Packet *XPassAgent::construct_data_mpath(Packet *credit,seq_t data_len)
+{
+  Packet *p = allocpkt();
+  if (!p)
+  {
+    fprintf(stderr, "ERROR: allockpkt() failed\n");
+    exit(1);
+  }
+  hdr_tcp *tcph = hdr_tcp::access(p);
+  hdr_cmn *cmnh = hdr_cmn::access(p);
+  hdr_xpass *xph = hdr_xpass::access(p);
+  hdr_xpass *credit_xph = hdr_xpass::access(credit);
+  //int datalen = (int)min(max_segment(),
+  //                       datalen_remaining());
+
+  if (data_len <= 0)
+  {
+    fprintf(stderr, "ERROR: datapacket has length of less than zero\n");
+    exit(1);
+  }
+  tcph->seqno() = t_seqno_;
+  tcph->ackno() = recv_next_;
+  tcph->hlen() = xpass_hdr_size_;
+
+  cmnh->size() = max(min_ethernet_size_, xpass_hdr_size_ + data_len);
+  cmnh->ptype() = PT_XPASS_DATA;
+
+  xph->credit_sent_time() = credit_xph->credit_sent_time();
+  xph->credit_seq() = credit_xph->credit_seq();
+  xph->data_length_ = data_len;
+  xph->is_active = get_is_active();
+
+  t_seqno_ += data_len;
 
   return p;
 }
@@ -694,6 +742,8 @@ Packet *XPassAgent::construct_nack(seq_t seq_no)
 
 void XPassAgent::send_credit()
 {
+  //if(mp_agent_ -> mp_recv_state_ == MP_RECV_FINISHED)
+  //  return;
   double avg_credit_size = (min_credit_size_ + max_credit_size_) / 2.0;
   double delay;
   credit_feedback_control();
@@ -720,7 +770,8 @@ void XPassAgent::send_credit()
   //printf("Send_credit()::cur_credit_rate  : %d\n", cur_credit_rate_ );
 }
 
-void XPassAgent::send_one_credit(){
+void XPassAgent::send_one_credit()
+{
   printf("send one credit called!\n");
   send(construct_credit(), 0);
 }
@@ -834,13 +885,8 @@ void XPassAgent::credit_feedback_control()
   double temp_final;
   if (loss_rate > target_loss)
   {
+    less_congested_ = 0;
     congestion_++;
-    if (congestion_ >= reset_count_ && reset_count_ > 0)
-    {
-      congestion_ = 0;
-      //printf("reset subflow triggerd!\n");
-      mp_agent_->reset_subflows();
-    }
     if (loss_rate >= 1.0)
     {
       cur_credit_rate_ = (int)(avg_credit_size() / rtt_);
@@ -863,7 +909,14 @@ void XPassAgent::credit_feedback_control()
   }
   else
   {
+    less_congested_++;
     congestion_ = 0;
+    //if (less_congested_ >= reset_count2_ && reset_count2_ > 0 && mp_agent_ -> get_act_sub_num() < mp_agent_ -> get_K())
+    /*{
+      less_congested_ = 0;
+      //printf("reset subflow triggerd!\n");
+      mp_agent_->reset_subflows();
+    }*/
     // there is no congestion.
     if (can_increase_w_)
     {
@@ -900,6 +953,16 @@ void XPassAgent::credit_feedback_control()
   credit_total_ = 0;
   credit_dropped_ = 0;
   last_credit_rate_update_ = now();
+
+  if ((congestion_ >= reset_count_ && reset_count_ > 0) ||
+      (less_congested_ >= reset_count2_ && reset_count2_ > 0 && mp_agent_->get_act_sub_num() < mp_agent_->get_K()))
+  {
+    congestion_ = 0;
+    less_congested_ = 0;
+    //printf("reset subflow triggerd!\n");
+    if(mp_agent_ -> mp_recv_state_ == MP_RECV_CREDIT_SENDING)
+      mp_agent_->reset_subflows(fid_);
+  }
   /*
 printf("Credit_feedback_control()::old_rate         : %d\n", old_rate);
 printf("Credit_feedback_control()::loss_rate        : %lf\n", loss_rate);
@@ -913,12 +976,12 @@ printf("Credit_feedback_control()::cur_credit_rate_ : %d\n", cur_credit_rate_);
 
 bool XPassAgent::check_stop(int remain_bytes)
 {
-  if (remain_bytes <= max_segment())
+  if (remain_bytes == 0)
   {
     if (credit_stop_timer_.status() != TIMER_IDLE)
     {
       fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
-      return false;
+      exit(1);
     }
     // Because ns2 does not allow sending two consecutive packets,
     // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.
@@ -932,7 +995,7 @@ bool XPassAgent::check_stop(int remain_bytes)
       if (credit_stop_timer_.status() != TIMER_IDLE)
       {
         fprintf(stderr, "Error: CreditStopTimer seems to be scheduled more than once.\n");
-         return false;
+        exit(1);
       }
       // Because ns2 does not allow sending two consecutive packets,
       // credit_stop_timer_ schedules CREDIT_STOP packet with no delay.

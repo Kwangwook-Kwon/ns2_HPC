@@ -409,7 +409,6 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       //}
       if (mp_recv_state_ == MP_RECV_FINISHED || mp_recv_state_ == MP_RECV_CREDIT_SENDING)
       {
-        Packet::free(pkt);
         break;
       }
       if (mp_recv_state_ == MP_RECV_CLOSED)
@@ -437,11 +436,12 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
       fct_data_ = now() - fst_;
       remain_buffer_--;
       flow_size_ += xph->data_length_;
+      //printf("%lf Flow Size : %15ld Received : %d\n",now(), flow_size_, xph->data_length_);
       subflows_[id].xpass_->recv_data(pkt);
       break;
 
     case PT_XPASS_CREDIT_STOP:
-      if (mp_recv_state_ == MP_RECV_CREDIT_SENDING ||mp_recv_state_ == MP_RECV_PATH_RESET )
+      if (mp_recv_state_ == MP_RECV_CREDIT_SENDING || mp_recv_state_ == MP_RECV_PATH_RESET)
         mp_recv_state_ = MP_RECV_FINISHED;
       fct_stop_ = now() - fst_;
       for (int i = 0; i < sub_num_; i++)
@@ -506,7 +506,7 @@ void MptcpAgent::sendmsg(seq_t nbytes, const char * /*flags */)
     total_bytes_ = TCP_MAXSEQ;
   }
   else
-  { 
+  {
     input_flow_size_ = nbytes;
     remain_bytes_ = nbytes;
     total_bytes_ = nbytes;
@@ -775,7 +775,7 @@ int MptcpAgent::find_low_rtt()
   return id;
 }
 
-void MptcpAgent::reset_subflows()
+void MptcpAgent::reset_subflows(int fid)
 {
   if (mp_recv_state_ == MP_RECV_PATH_RESET)
     return; //nothing doing it is alread reset
@@ -786,7 +786,8 @@ void MptcpAgent::reset_subflows()
   {
     subflows_[i].xpass_->reset_ = 1;
     subflows_[i].xpass_->credit_send_state_ = XPASS_SEND_CREDIT_SENDING;
-    subflows_[i].xpass_->send_credit_timer_.resched(0);
+    if(fid_ != i)
+      subflows_[i].xpass_->send_credit_timer_.resched(0);
     //subflows_[i].xpass_->send_one_credit();
   }
 }
@@ -795,20 +796,6 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
 {
   int sent_bytes;
   hdr_xpass *xph = hdr_xpass::access(pkt);
-  if (mp_sender_state_ != MP_SENDER_CREDIT_STOP_SENT)
-  {
-    if (subflows_[id].xpass_->check_stop(remain_bytes_))
-    {
-      mp_sender_state_ = MP_SENDER_CREDIT_STOP_SENT;
-      subflows_[find_low_rtt()].xpass_->credit_stop_timer_.resched(0);
-      for (int i = 0; i < sub_num_; i++)
-      {
-        subflows_[i].xpass_->credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
-        subflows_[i].xpass_->sender_retransmit_timer_.resched(
-            subflows_[i].xpass_->rtt_ > 0 ? (2. * subflows_[i].xpass_->rtt_) : subflows_[i].xpass_->default_credit_stop_timeout_);
-      }
-    }
-  }
 
   switch (mp_sender_state_)
   {
@@ -816,11 +803,8 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
     if (mp_sender_state_ == MP_SENDER_CREDIT_REQUEST_SENT)
     {
       mp_sender_state_ = MP_SENDER_PATH_RESET;
-      if (id != primary_subflow_)
-      {
-        subflows_[primary_subflow_].xpass_->sender_retransmit_timer_.force_cancel();
-        subflows_[primary_subflow_].xpass_->credit_recv_state_ = XPASS_RECV_CREDIT_RECEIVING;
-      }
+      subflows_[primary_subflow_].xpass_->sender_retransmit_timer_.force_cancel();
+      subflows_[primary_subflow_].xpass_->credit_recv_state_ = XPASS_RECV_CREDIT_RECEIVING;
     }
     goto reset;
 
@@ -843,10 +827,10 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
       credit_wasted++;
     break;
 
-  reset:
   case MP_SENDER_PATH_RESET:
+  reset:
     //printf("RESET\n\n");
-    if (xph->reset_ == 0 || subflows_[id].xpass_-> get_is_active())
+    if (xph->reset_ == 0 || subflows_[id].xpass_->get_is_active())
     {
       sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
       remain_bytes_ -= sent_bytes;
@@ -870,10 +854,12 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
       if (sent_bytes == 0)
         credit_wasted++;
     }
-    if (K == act_sub_num_ || (now() - reset_time_) > 0.07){
+    if (K == act_sub_num_ || (now() - reset_time_) > 0.07)
+    {
       mp_sender_state_ = MP_SENDER_CREDIT_RECEIVING;
-      printf("Act_sub_NUM : %2d, Flow Size : %10ld, Remain Size : %10ld\n", act_sub_num_, input_flow_size_, remain_bytes_);
-      if(act_sub_num_ == 0 ){
+      //printf("Act_sub_NUM : %2d, Flow Size : %15lld, Remain Size : %15lld\n", act_sub_num_, input_flow_size_, remain_bytes_);
+      if (act_sub_num_ == 0)
+      {
         fprintf(stderr, "ERROR: No active subflow\n");
         exit(1);
       }
@@ -886,5 +872,30 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
     if (sent_bytes == 0)
       credit_wasted++;
     break;
+
+  default:
+    sent_bytes = subflows_[id].xpass_->recv_credit_mpath(pkt, remain_bytes_);
+    remain_bytes_ -= sent_bytes;
+    if (sent_bytes == 0)
+      credit_wasted++;
+    break;
   }
+
+  if (mp_sender_state_ != MP_SENDER_CREDIT_STOP_SENT)
+  {
+    if (subflows_[id].xpass_ -> check_stop(remain_bytes_))
+    {
+      int low_rtt = find_low_rtt();
+      mp_sender_state_ = MP_SENDER_CREDIT_STOP_SENT;
+      subflows_[low_rtt].xpass_->credit_stop_timer_.resched(0);
+      for (int i = 0; i < sub_num_; i++)
+      {
+        if(low_rtt != i)
+        subflows_[i].xpass_->credit_recv_state_ = XPASS_RECV_CREDIT_STOP_SENT;
+        subflows_[i].xpass_->sender_retransmit_timer_.resched(
+            subflows_[i].xpass_->rtt_ > 0 ? (2. * subflows_[i].xpass_->rtt_) : subflows_[i].xpass_->default_credit_stop_timeout_);
+      }
+    }
+  }
+  //printf("%lf state : %d Remain : %ld, Sent:  %ld\n",now(),mp_sender_state_, remain_bytes_, sent_bytes);
 }

@@ -34,6 +34,7 @@ set K [expr $N/2];
 # XPass configurations
 #
 set reset_count 8
+set reset_count_2 3
 set alpha 0.5
 set w_init 0.0625
 set creditBuffer [expr 84*8]
@@ -307,6 +308,7 @@ for {set i 0} {$i < $numFlow} {incr i} {
     $SubfAgent_receiver($i,$j) set fid_ $j
     $SubfAgent_receiver($i,$j) set host_id_ $dst_nodeid
     $SubfAgent_receiver($i,$j) set reset_count_ $reset_count
+    $SubfAgent_receiver($i,$j) set reset_count2_ $reset_count_2
     $ns attach-agent $dcSubNode($dst_nodeid,$j)  $SubfAgent_receiver($i,$j)
     $mpath_receiver_agent($i) attach-xpass $SubfAgent_receiver($i,$j) 
   }

@@ -111,8 +111,8 @@ public:
   XPassAgent(): Agent(PT_XPASS_DATA), credit_send_state_(XPASS_SEND_CLOSED),
                 credit_recv_state_(XPASS_RECV_CLOSED), last_credit_rate_update_(-0.0),
                 credit_total_(0), credit_dropped_(0), can_increase_w_(false),reset_(0),
-                send_credit_timer_(this), credit_stop_timer_(this), recv_data_(0),
-                sender_retransmit_timer_(this), receiver_retransmit_timer_(this),reset_count_(0),
+                send_credit_timer_(this), credit_stop_timer_(this), recv_data_(0),less_congested_(0),
+                sender_retransmit_timer_(this), receiver_retransmit_timer_(this),reset_count_(0),reset_count2_(0),
                 fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),congestion_(0),
                 c_seqno_(1), c_recv_next_(1), rtt_(-0.0),remain_bytes_(0), is_active_(false),
                 credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),mp_agent_(NULL),
@@ -129,14 +129,13 @@ public:
   void send_credit_stop();
   void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
-  seq_t recv_credit_mpath(Packet *pkt, int remain_bytes_);
+  seq_t recv_credit_mpath(Packet *pkt, int data_len);
   inline bool   get_is_active(){return is_active_;};
   inline void   set_active(){is_active_ = true;};
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
   inline int get_credit_total_dropped(){return credit_total_dropped_;};
   inline seq_t get_recv_data(){return recv_data_;};
-  int reset_count_;
   bool check_stop(int);
   void send_one_credit();
   MptcpAgent* mp_agent_;
@@ -211,6 +210,9 @@ protected:
   bool is_active_;
   //detecting congestion
   int congestion_;
+  int less_congested_;
+  int reset_count_;
+  int reset_count2_;
 
 
   SendCreditTimer send_credit_timer_;
@@ -262,6 +264,7 @@ protected:
   Packet* construct_credit_stop();
   Packet* construct_credit();
   Packet* construct_data(Packet *credit);
+  Packet* construct_data_mpath(Packet *credit,seq_t);
   Packet* construct_nack(seq_t seq_no);
 
   void recv_credit_request(Packet *pkt);
