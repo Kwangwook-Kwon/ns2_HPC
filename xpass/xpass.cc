@@ -141,7 +141,7 @@ int XPassAgent::delay_bind_dispatch(const char *varName, const char *localName,
   {
     return TCL_OK;
   }
-  if (delay_bind(varName, localName, "rest_count_", &min_jitter_, tracer))
+  if (delay_bind(varName, localName, "reset_count_", &reset_count_, tracer))
   {
     return TCL_OK;
   }
@@ -838,7 +838,7 @@ void XPassAgent::credit_feedback_control()
     if (congestion_ >= reset_count_ && reset_count_ > 0)
     {
       congestion_ = 0;
-      //printf("reset subflow triggerd!\n");
+      printf("reset subflow triggerd!\n %d",reset_count_);
       mp_agent_->reset_subflows();
     }
     if (loss_rate >= 1.0)
@@ -848,7 +848,8 @@ void XPassAgent::credit_feedback_control()
     else
     {
       cur_credit_rate_ = (int)(avg_credit_size() * (credit_total_ - credit_dropped_) / (now() - last_credit_rate_update_) * (1.0 + target_loss));
-    }
+//cur_credit_rate_ = min(cur_credit_rate_/2, temp);
+		}
     if (cur_credit_rate_ > old_rate)
     {
       cur_credit_rate_ = old_rate;

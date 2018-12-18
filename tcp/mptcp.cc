@@ -872,7 +872,7 @@ void MptcpAgent::recv_credit(Packet *pkt, int id)
     }
     if (K == act_sub_num_ || (now() - reset_time_) > 0.07){
       mp_sender_state_ = MP_SENDER_CREDIT_RECEIVING;
-      printf("Act_sub_NUM : %2d, Flow Size : %10ld, Remain Size : %10ld\n", act_sub_num_, input_flow_size_, remain_bytes_);
+      //printf("Act_sub_NUM : %2d, Flow Size : %10ld, Remain Size : %10ld\n", act_sub_num_, input_flow_size_, remain_bytes_);
       if(act_sub_num_ == 0 ){
         fprintf(stderr, "ERROR: No active subflow\n");
         exit(1);
