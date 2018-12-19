@@ -4,9 +4,12 @@
 #include "agent.h"
 #include "packet.h"
 #include "tcp.h"
+#include "mptcp.h"
 #include "template.h"
 #include <assert.h>
 #include <math.h>
+
+class MptcpAgent;
 
 typedef enum XPASS_SEND_STATE_ {
   XPASS_SEND_CLOSED=1,
@@ -46,6 +49,8 @@ struct hdr_xpass {
   inline static hdr_xpass* access(const Packet* p) {
     return (hdr_xpass*)p->access(offset_);
   }
+
+	int reset_;
 
   /* per-field member access functions */
   double& credit_sent_time() { return (credit_sent_time_); }
@@ -106,12 +111,12 @@ public:
   XPassAgent(): Agent(PT_XPASS_DATA), credit_send_state_(XPASS_SEND_CLOSED),
                 credit_recv_state_(XPASS_RECV_CLOSED), last_credit_rate_update_(-0.0),
                 credit_total_(0), credit_dropped_(0), can_increase_w_(false),
-                send_credit_timer_(this), credit_stop_timer_(this), 
+                send_credit_timer_(this), credit_stop_timer_(this), recv_data_(0), 
                 sender_retransmit_timer_(this), receiver_retransmit_timer_(this),
-                fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),
+                fct_timer_(this), curseq_(1), t_seqno_(1), recv_next_(1),congestion_(0),
                 c_seqno_(1), c_recv_next_(1), rtt_(-0.0),remain_bytes_(0), is_active_(false),
                 credit_recved_(0), wait_retransmission_(false), fct_(-1) ,fst_ (-1),
-                credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0), credit_total_dropped_(0) { }
+                credit_wasted_(0), credit_recved_rtt_(0), last_credit_recv_update_(0), credit_total_dropped_(0), parent_(NULL) { }
   virtual int command(int argc, const char*const* argv);
   virtual void recv(Packet*, Handler*);
   inline double now() { return Scheduler::instance().clock(); }
@@ -121,6 +126,7 @@ public:
   int pkt_remaining() { return ceil(datalen_remaining()/(double)max_segment()); }
   double avg_credit_size() { return (min_credit_size_ + max_credit_size_)/2.0; }
   void send_credit();
+  void send_one_credit();
   void send_credit_stop();
   void send_credit_request(seq_t nb);
   void advance_bytes(seq_t nb);
@@ -130,7 +136,9 @@ public:
   inline void   set_deactive(){is_active_ = false;};
   inline double get_rtt(){return rtt_;};
   inline int get_credit_total_dropped(){return credit_total_dropped_;};
+	inline seq_t get_recv_data(){return recv_data_;};
   bool check_stop(int);
+	int reset_;
   //void mptcp_set_core (MptcpAgent *);
   //double xpass_get_cwnd ()
   //{
@@ -173,6 +181,7 @@ protected:
   int cur_credit_rate_;
   // initial cur_credit_rate_ = alpha_ * max_credit_rate_
   double alpha_;
+	MptcpAgent *parent_;
   // last time for cur_credit_rate_ update with feedback control.
   double last_credit_rate_update_;
   // target loss scaling factor.
@@ -198,6 +207,8 @@ protected:
   double min_jitter_;
   //represent subflow state
   bool is_active_;
+	//detecting congestion
+	int congestion_;
 
   SendCreditTimer send_credit_timer_;
   CreditStopTimer credit_stop_timer_;
@@ -217,6 +228,7 @@ protected:
   seq_t c_recv_next_;
   //Total send Bytes on Mpath agent
   seq_t remain_bytes_;
+	seq_t recv_data_;
 
   // weighted-average round trip time
   double rtt_;
@@ -260,7 +272,7 @@ protected:
   void process_ack(Packet *pkt);
   void update_rtt(Packet *pkt);
 
-  void credit_feedback_control();
+  int credit_feedback_control();
 };
 
 #endif

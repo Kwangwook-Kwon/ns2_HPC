@@ -218,6 +218,7 @@ int MptcpAgent::command(int argc, const char *const *argv)
       subflows_[id].xpass_ = (XPassAgent *)TclObject::lookup(argv[2]);
       subflows_[id].used = true;
       subflows_[id].is_xpass = true;
+			subflows_[id].xpass_ -> parent_ = this;
       subflows_[id].addr_ = subflows_[id].xpass_->addr();
       subflows_[id].port_ = subflows_[id].xpass_->port();
       //subflows_[id].xpass_->xpass_set_core (this);
@@ -334,6 +335,8 @@ void MptcpAgent::recv(Packet *pkt, Handler *h)
   {
     if ((mptcp_flag & TH_SYN) && (fst_ == -1))
     {
+			if (cmmh->ptype() != PT_XPASS_CREDIT_REQUEST)
+				printf("no!!!\n");
       fst_ = now();
     }
     if (mptcp_flag & TH_PUSH)

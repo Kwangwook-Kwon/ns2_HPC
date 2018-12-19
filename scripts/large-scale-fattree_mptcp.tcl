@@ -3,7 +3,7 @@ set ns [new Simulator]
 #
 # Flow configurations
 #cd ns
-set numFlow 1024
+set numFlow 10000
 set workload "cachefollower" ;# cachefollower, mining, search, webserver
 set linkLoad 0.6 ;# ranges from 0.0 to 1.0
 
@@ -247,11 +247,11 @@ for {set i 0} {$i < $numNode} {incr i} {
 
 puts "Creating agents ..."
 for {set i 0} {$i < $numFlow} {incr i} {
-  set src_nodeid 3
-  set dst_nodeid 34 
+	#set src_nodeid 3
+	#set dst_nodeid 34 
 
-  #set src_nodeid [expr int([$randomSrcNodeId value])]
-  #set dst_nodeid [expr int([$randomDstNodeId value])]
+  set src_nodeid [expr int([$randomSrcNodeId value])]
+  set dst_nodeid [expr int([$randomDstNodeId value])]
   while {$src_nodeid == $dst_nodeid} {
     set src_nodeid [expr int([$randomSrcNodeId value])]
     set dst_nodeid [expr int([$randomDstNodeId value])]

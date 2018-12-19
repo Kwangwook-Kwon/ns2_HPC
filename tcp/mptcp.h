@@ -28,6 +28,9 @@
  * SUCH DAMAGE.
  */
 
+#ifndef MPTCP_HD
+#define MPTCP_HD
+
 #include "tcp-full.h"
 #include "mptcp-full.h"
 #include "agent.h"
@@ -55,6 +58,7 @@ typedef enum MP_RECV_STATE_ {
 } MP_RECV_STATE;
 
 class MptcpAgent;
+class XPassAgent;
 
 class MP_FCT_Timer: public TimerHandler {
 public:
@@ -145,6 +149,9 @@ public:
   int find_low_rtt();
   MP_SENDER_STATE mp_sender_state_;
   MP_RECV_STATE mp_recv_state_;
+	struct subflow subflows_[MAX_SUBFLOW];
+	int act_sub_num_;
+  int sub_num_;
 
 protected:
   virtual void delay_bind_init_all();
@@ -164,7 +171,6 @@ protected:
   seq_t credit_wasted;
   bool is_xpass;
   int is_sender_;
-  int sub_num_;
   int dst_num_;
   seq_t remain_bytes_;
   seq_t total_bytes_;
@@ -175,7 +181,6 @@ protected:
   int use_olia_;
   int fid_;
   int K;
-  int act_sub_num_;
   int primary_subflow_;
   double fst_;
   double fct_data_;
@@ -184,7 +189,8 @@ protected:
   double default_credit_stop_timeout_;
   double totalcwnd_;
   double alpha_;
-  struct subflow subflows_[MAX_SUBFLOW];
   struct dstinfo dsts_[MAX_SUBFLOW];
   vector < dack_mapping > dackmap_;
 };
+
+#endif
